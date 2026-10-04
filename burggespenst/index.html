@@ -75,6 +75,16 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night)
 .score { text-align: center; font-size: 20px; font-weight: 800; margin: 0; font-variant-numeric: tabular-nums; }
 @media (max-width: 420px) { #stagePill { font-size: 14px; padding: 7px 12px; } .slot { width: 32px; height: 32px; } #slots { gap: 4px; } }
 @media (prefers-reduced-motion: reduce) { .btn, #toast, #card, #flash, #fade { transition: none; } .slot.pop { animation: none; } }
+.rotate { display: none; margin: 0; font-size: 14px; font-weight: 800; color: #8a5a22; text-align: center; }
+@media (max-width: 600px) and (orientation: portrait) { .rotate { display: block; } }
+@media (max-height: 520px) {
+  .sheet { width: min(720px, 100%); padding: 12px 18px 14px; gap: 7px; }
+  .sheet h1 { font-size: 30px; } .sheet .lead { font-size: 15px; }
+  .rules { grid-template-columns: 1fr 1fr; gap: 5px 16px; font-size: 13.5px; } .rules i { font-size: 16px; width: 20px; }
+  .btn { font-size: 19px; padding: 8px 26px; } .big { font-size: 40px; } .score { font-size: 17px; }
+  #card { top: 16%; padding: 10px 16px 12px; } #card h2 { font-size: 26px; } #card p { font-size: 14px; }
+  .slot { width: 30px; height: 30px; } .slot svg { width: 18px; height: 18px; }
+}
 .home { color: #5b2a86; font-weight: 800; font-size: 16px; text-decoration: none; justify-self: center; }
 .home:hover, .home:focus-visible { text-decoration: underline; }
 </style>
@@ -105,6 +115,7 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night)
       <li><i>👻</i><span>Das Gespenst ist langsam, aber es gibt nie auf. Erwischt es dich, musst du zurück zum Anfang der Stufe.</span></li>
       <li><i>❤️</i><span>Sammle Herzen! Jedes Herz beschützt dich einmal vor dem Gespenst.</span></li>
     </ul>
+    <p class="rotate">📱 Tipp: Halte dein Handy quer, dann siehst du mehr!</p>
     <button id="go" class="btn">Los geht's!</button>
     <a class="home" href="../index.html">← Alle Spiele</a>
   </div>

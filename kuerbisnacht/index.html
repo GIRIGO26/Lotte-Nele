@@ -167,6 +167,29 @@ button { font-family: inherit; }
 #recordLine { font-weight: 800; color: var(--slime); min-height: 1.2em; }
 .btnrow { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 @media (max-aspect-ratio: 4/5) { #results { top: auto; bottom: calc(10px + var(--safe-b)); right: 50%; transform: translateX(50%); max-height: 60%; } }
+.rotate { display: none; margin: 0; font-size: 13px; font-weight: 700; color: var(--slime); text-align: center; }
+@media (max-width: 600px) and (orientation: portrait) { .rotate { display: block; } }
+@media (max-height: 520px) and (orientation: landscape) {
+  #title { align-items: center; }
+  #title .panel { gap: 5px; padding: 12px 16px; max-height: 100%; }
+  .logo { font-size: 40px; } .sub { font-size: 15px; margin: -2px 0 0; }
+  .lbl { font-size: 11px; margin-top: 0; } #nameIn { padding: 5px 12px; font-size: 17px; }
+  .sw { width: 30px; height: 30px; } .seg button { padding: 4px 8px; font-size: 14px; }
+  #startBtn { font-size: 22px; padding: 8px 28px; margin-top: 2px; }
+  .records { display: none; }
+  #hint { display: none !important; }
+  #timer { top: calc(10px + var(--safe-t)); left: auto; right: 70px; transform: none; font-size: 16px; animation: none !important; }
+  .topbar { top: calc(90px + var(--safe-t)); }
+  #toast { top: calc(100px + var(--safe-t)); font-size: 15px; }
+  .dock { padding: 5px; gap: 4px; }
+  .dock .row { flex-wrap: nowrap; overflow-x: auto; justify-content: safe center; max-width: calc(100vw - 40px); }
+  .tool { width: 46px; min-height: 46px; font-size: 9px; } .tool canvas, .tool svg { width: 22px; height: 22px; } .tool .emo { font-size: 20px; line-height: 22px; }
+  .tool.go { width: 64px; font-size: 14px; } .sizes button { width: 32px; height: 46px; } .sw.frost { width: 32px; height: 32px; }
+  #card { top: 16%; padding: 10px 16px; } #card h2 { font-size: 24px; } #card p { font-size: 14px; }
+  #jury { padding: 8px; gap: 6px; } #juryWho { font-size: 19px; } .judge .num { font-size: 30px; } .judge .say { font-size: 11px; min-height: 2.2em; }
+  .overlay .panel { padding: 12px 16px; gap: 8px; } .panel h2 { font-size: 24px; } .podlist li { padding: 4px 10px; font-size: 15px; } .btn.big { font-size: 21px; padding: 8px 26px; }
+  #results { width: min(360px, 48%); max-height: calc(100% - 20px); gap: 6px; } #rankTitle { font-size: 34px; } .lines li { font-size: 14px; padding: 2px 8px; }
+}
 @media (prefers-reduced-motion: reduce) { #toast, #card, #fade, .btn { transition: none; } .float, #score.bump, #timer.warn, .judge .num.flip { animation: none; } }
 .home { color: var(--muted); font-weight: 700; font-size: 15px; text-decoration: none; justify-self: center; }
 .home:hover, .home:focus-visible { color: var(--bone); text-decoration: underline; }
@@ -198,6 +221,7 @@ button { font-family: inherit; }
     <div class="lbl">Haare</div><div class="swatches" id="hairSw"></div>
     <div class="lbl">Haut</div><div class="swatches" id="skinSw"></div>
     <div class="lbl">Frisur</div><div class="seg" id="styleSeg"></div>
+    <p class="rotate">📱 Tipp: Halte dein Handy quer, dann siehst du beim Laufen mehr!</p>
     <button id="startBtn" class="btn big">Los geht's!</button>
     <button id="quickBtn" class="btn ghost" hidden>Schnellspiel: nur die Geistersuche</button>
     <a class="home" href="../index.html">← Alle Spiele</a>
@@ -653,6 +677,7 @@ function followPath(P, path, sp, dt, grid) {
   }
   return null;
 }
+function dockFrac(id) { const d = $(id), H = innerHeight; const dh = d && !d.hidden ? (d.getBoundingClientRect().height + 16) / H : 0; return [dh, Math.min(.25, (H < 520 ? 60 : 80) / H)]; }
 function camOffset(scale = 1) { const a = innerWidth / innerHeight, m = a < .8 ? 1.45 : a < 1.2 ? 1.18 : 1; return new THREE.Vector3(0, 13.5 * m * scale, 6.8 * m * scale); }
 function camFollow(cam, look, tx, tz, dt, off, k = 4) {
   cam.position.x = damp(cam.position.x, tx + off.x, k, dt); cam.position.y = damp(cam.position.y, off.y, k, dt); cam.position.z = damp(cam.position.z, tz + off.z, k, dt);
@@ -1457,9 +1482,9 @@ const CarveStage = {
     S.placeCam(); Snd.music('fest');
   },
   placeCam() {
-    const S = this, a = innerWidth / innerHeight, half = Math.tan(20 * Math.PI / 180);
-    const dist = Math.max(4.5, 2.75 / (2 * half * a)), py = S.P.group.position.y, vis = 2 * dist * half;
-    S.camBase = { pos: new THREE.Vector3(0, py + .55, S.P.group.position.z + dist), look: new THREE.Vector3(0, py - vis * (a < .8 ? .17 : .1), S.P.group.position.z) };
+    const S = this, a = innerWidth / innerHeight, half = Math.tan(20 * Math.PI / 180), [dh, th] = dockFrac('carveDock'), free = Math.max(.32, 1 - dh - th);
+    const dist = Math.max(3.8, 1.8 / (free * 2 * half), 2.75 / (2 * half * a)), py = S.P.group.position.y, vis = 2 * dist * half;
+    S.camBase = { pos: new THREE.Vector3(0, py + .55, S.P.group.position.z + dist), look: new THREE.Vector3(0, py - vis * (dh - th) / 2, S.P.group.position.z) };
     if (S.carving) { S.camera.position.copy(S.camBase.pos); S.camera.lookAt(S.camBase.look); }
   },
   resize() { this.placeCam(); },
@@ -1688,7 +1713,7 @@ const BakeStage = {
   placeCam() {
     const S = this, a = innerWidth / innerHeight;
     if (S.phase === 'catch') { S.camD = a < .8 ? 17 : Math.max(10.5, 7.4 / a + 2.3); S.camFollow = a < .8 ? 1 : a < 1.3 ? .8 : .45; S.camY = 3.4 + (a < .8 ? 2.2 : 0); S.camera.position.set(S.x * S.camFollow, S.camY, S.camD); S.camera.lookAt(S.x * S.camFollow, 2.9 + (a < .8 ? 1.2 : 0), 0); }
-    else if (S.cakePos) { const d = Math.max(4.6, 3.3 / a), c = S.cakePos; S.camPos = new THREE.Vector3(c.x, c.y + 2.6 + (a < .8 ? 1 : 0), c.z + d); S.camLook = new THREE.Vector3(c.x, c.y + .45 - (a < .8 ? .9 : .25), c.z); if (!S.orbit) { S.camera.position.copy(S.camPos); S.camera.lookAt(S.camLook); } }
+    else if (S.cakePos) { const half = Math.tan(21 * Math.PI / 180), [dh, th] = dockFrac('cakeDock'), free = Math.max(.32, 1 - dh - th), d = Math.max(4, 2.0 / (free * 2 * half), 3.0 / (2 * half * a)), vis = 2 * d * half, c = S.cakePos; S.camPos = new THREE.Vector3(c.x, c.y + .9 + d * .32, c.z + d); S.camLook = new THREE.Vector3(c.x, c.y + .15 - vis * (dh - th) * .6, c.z); if (!S.orbit) { S.camera.position.copy(S.camPos); S.camera.lookAt(S.camLook); } }
   },
   resize() { this.placeCam(); },
   buildCatchBar() {

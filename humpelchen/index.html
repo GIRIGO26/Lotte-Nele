@@ -59,6 +59,14 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: var(--sky-to
 .how b { font-size: 24px; width: 34px; text-align: center; flex: none; }
 #go { font-size: 26px; padding: 14px 34px; justify-self: center; }
 @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+#start { overflow: auto; padding-block: 12px; }
+@media (max-height: 520px) {
+  .card { max-width: 660px; padding: 14px 20px; gap: 8px; }
+  .card h1 { font-size: 30px; } .card p { font-size: 16px; }
+  .how { grid-template-columns: 1fr 1fr; font-size: 14px; gap: 6px 16px; } .how b { font-size: 18px; width: 24px; }
+  #go { font-size: 22px; padding: 9px 28px; }
+  #invis { width: 76px; height: 76px; font-size: 13px; } #invis span { font-size: 22px; }
+}
 .home { color: var(--ink); font-weight: 800; font-size: 16px; text-decoration: none; justify-self: center; opacity: .7; }
 .home:hover, .home:focus-visible { opacity: 1; text-decoration: underline; }
 </style>
