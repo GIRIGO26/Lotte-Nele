@@ -1,0 +1,873 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
+<title>Das Burggespenst</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Baloo+2:wght@500;700;800&display=swap">
+<style>
+/* Ein Bildschirm, ein Spiel: 3D-Leinwand füllt alles, Anzeigen schweben oben und unten. Bewusst nur ein Look (Nacht in der Burg). */
+:root {
+  --night: #0f1428;
+  --panel: rgba(18, 14, 36, .78);
+  --parch: #f4e6c6;
+  --parch-edge: #c9a46a;
+  --ink: #2b1d12;
+  --gold: #f2c14e;
+  --heart: #e8435a;
+  --fairy: #ffb3e6;
+  --display: "MedievalSharp", "Palatino Linotype", Georgia, serif;
+  --body: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night); color: var(--parch); font-family: var(--body); }
+#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.hud { position: fixed; left: 0; right: 0; top: 0; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; pointer-events: none; }
+.stat { background: var(--panel); border-radius: 16px; padding: 8px 14px; display: grid; gap: 2px; border: 2px solid rgba(242,193,78,.35); }
+#hearts { display: flex; gap: 3px; min-height: 24px; align-items: center; }
+#hearts svg { width: 24px; height: 24px; }
+#points { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+#points b { color: var(--gold); font-size: 20px; font-weight: 800; }
+#stagePill { background: var(--panel); border-radius: 999px; padding: 8px 16px; font-family: var(--display); font-size: 17px; text-align: center; border: 2px solid rgba(242,193,78,.35); text-wrap: balance; }
+#sound { pointer-events: auto; width: 46px; height: 46px; border-radius: 50%; border: 2px solid rgba(242,193,78,.5); background: var(--panel); color: var(--parch); font-size: 20px; cursor: pointer; flex: none; }
+#sound:focus-visible, .btn:focus-visible { outline: 3px solid var(--fairy); outline-offset: 3px; }
+
+.armor { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); background: var(--panel); border: 2px solid rgba(242,193,78,.35); border-radius: 18px; padding: 6px 10px 8px; display: grid; gap: 4px; pointer-events: none; max-width: calc(100% - 32px); }
+.armorLabel { font-size: 13px; font-weight: 700; text-align: center; letter-spacing: .04em; }
+.armorLabel span { color: var(--gold); }
+#slots { display: flex; gap: 5px; justify-content: center; }
+.slot { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,.07); border: 2px dashed rgba(244,230,198,.25); display: grid; place-items: center; color: rgba(244,230,198,.28); }
+.slot svg { width: 22px; height: 22px; }
+.slot.got { background: linear-gradient(160deg, #ffe08a, #d9a531); border: 2px solid #fff3c4; color: #5a3b0a; }
+.slot.pop { animation: pop .6s ease; }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.45) rotate(-8deg); } 100% { transform: scale(1); } }
+
+#vignette { position: fixed; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at center, transparent 45%, rgba(140, 90, 230, .7) 100%); }
+#flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; background: #c4a2ff; transition: opacity .5s; }
+#fade { position: fixed; inset: 0; pointer-events: none; opacity: 0; background: #05040c; transition: opacity .6s; }
+
+#toast { position: fixed; left: 50%; top: calc(84px + env(safe-area-inset-top, 0px)); transform: translate(-50%, -8px); background: var(--parch); color: var(--ink); border: 3px solid var(--parch-edge); border-radius: 14px; padding: 8px 16px; font-weight: 800; font-size: 17px; text-align: center; max-width: calc(100% - 32px); width: max-content; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+#toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+#card { position: fixed; left: 50%; top: 24%; transform: translate(-50%, 10px); text-align: center; opacity: 0; transition: opacity .5s, transform .5s; pointer-events: none; width: min(440px, calc(100% - 32px)); background: var(--parch); color: var(--ink); border: 4px double var(--parch-edge); border-radius: 18px; padding: 14px 20px 16px; box-shadow: 0 14px 40px rgba(0,0,0,.5); }
+#card.on { opacity: 1; transform: translate(-50%, 0); }
+#card small { font-weight: 800; letter-spacing: .12em; text-transform: uppercase; font-size: 12px; color: #8a5a22; }
+#card h2 { margin: 2px 0 6px; font-family: var(--display); font-size: clamp(28px, 7vw, 38px); font-weight: 400; line-height: 1.05; }
+#card p { margin: 0; font-size: 16px; font-weight: 500; line-height: 1.35; }
+
+#joyBase { position: fixed; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 3px solid rgba(255,179,230,.55); background: rgba(255,179,230,.12); pointer-events: none; display: grid; place-items: center; }
+#joyKnob { width: 54px; height: 54px; border-radius: 50%; background: rgba(255,214,240,.85); box-shadow: 0 0 18px rgba(255,179,230,.8); }
+
+.overlay { position: fixed; inset: 0; display: grid; place-items: center; padding-inline: 16px; background: rgba(8, 6, 22, .55); backdrop-filter: blur(2px); }
+.sheet { background: var(--parch); color: var(--ink); border: 5px double var(--parch-edge); border-radius: 22px; padding: 22px 22px 24px; width: min(460px, 100%); display: grid; gap: 12px; box-shadow: 0 18px 50px rgba(0,0,0,.55); max-height: calc(100% - 32px); overflow: auto; }
+.sheet h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(36px, 9vw, 50px); line-height: 1; text-align: center; color: #5b2a86; text-wrap: balance; }
+.sheet .lead { margin: 0; font-size: 18px; font-weight: 700; text-align: center; line-height: 1.3; text-wrap: balance; }
+.rules { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; font-size: 16px; font-weight: 500; line-height: 1.3; }
+.rules li { display: flex; gap: 10px; align-items: flex-start; }
+.rules i { font-style: normal; font-size: 20px; width: 28px; text-align: center; flex: none; }
+.btn { font-family: var(--body); font-weight: 800; font-size: 22px; border: 0; border-radius: 999px; padding: 10px 30px; cursor: pointer; justify-self: center; color: var(--ink); background: var(--gold); box-shadow: 0 5px 0 #a47a1d, 0 10px 20px rgba(0,0,0,.25); transition: transform .08s; }
+.btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #a47a1d; }
+.big { font-family: var(--display); font-size: 64px; text-align: center; line-height: 1; color: #a8761c; }
+.score { text-align: center; font-size: 20px; font-weight: 800; margin: 0; font-variant-numeric: tabular-nums; }
+@media (max-width: 420px) { #stagePill { font-size: 14px; padding: 7px 12px; } .slot { width: 32px; height: 32px; } #slots { gap: 4px; } }
+@media (prefers-reduced-motion: reduce) { .btn, #toast, #card, #flash, #fade { transition: none; } .slot.pop { animation: none; } }
+.home { color: #5b2a86; font-weight: 800; font-size: 16px; text-decoration: none; justify-self: center; }
+.home:hover, .home:focus-visible { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<canvas id="c" aria-label="Die Ritterin läuft durch Wald und Burg und wird vom Gespenst verfolgt"></canvas>
+<div id="vignette"></div>
+<div id="flash"></div>
+<header class="hud">
+  <div class="stat"><div id="hearts" aria-label="Herzen"></div><div id="points"><b>0</b> Punkte</div></div>
+  <div id="stagePill">Stufe 1 · Der dunkle Wald</div>
+  <button id="sound" aria-label="Ton an oder aus">🔊</button>
+</header>
+<div id="toast" role="status"></div>
+<div id="card"><small id="cardNum">Stufe 1 von 4</small><h2 id="cardName">Der dunkle Wald</h2><p id="cardHint"></p></div>
+<footer class="armor"><div class="armorLabel">Rüstung <span id="armorCount">0 von 8</span></div><div id="slots"></div></footer>
+<div id="joyBase" hidden><div id="joyKnob"></div></div>
+<div id="fade"></div>
+
+<div id="title" class="overlay">
+  <div class="sheet">
+    <h1>Das Burggespenst</h1>
+    <p class="lead">Hilf der tapferen Ritterin, alle 8 Teile ihrer Rüstung zu finden. Dann wird sie Königin der Burg!</p>
+    <ul class="rules">
+      <li><i>⬆️</i><span>Laufen mit den Pfeiltasten oder mit dem Finger: auf den Bildschirm tippen und ziehen.</span></li>
+      <li><i>✨</i><span>Die Fee fliegt voraus und zeigt dir mit einer Glitzerspur den Weg.</span></li>
+      <li><i>👻</i><span>Das Gespenst ist langsam, aber es gibt nie auf. Erwischt es dich, musst du zurück zum Anfang der Stufe.</span></li>
+      <li><i>❤️</i><span>Sammle Herzen! Jedes Herz beschützt dich einmal vor dem Gespenst.</span></li>
+    </ul>
+    <button id="go" class="btn">Los geht's!</button>
+    <a class="home" href="../index.html">← Alle Spiele</a>
+  </div>
+</div>
+
+<div id="end" class="overlay" hidden>
+  <div class="sheet">
+    <div class="big">♛</div>
+    <h1>Du bist Königin der Burg!</h1>
+    <p class="lead">Alle 8 Rüstungsteile gefunden. Sogar das Gespenst hat dich jetzt lieb.</p>
+    <p class="score" id="endScore"></p>
+    <button id="again" class="btn">Nochmal spielen</button>
+    <a class="home" href="../index.html">← Alle Spiele</a>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+
+/* ================== Spielwelt-Daten ================== */
+const ORDER = ['stiefel', 'beinschienen', 'handschuhe', 'brustpanzer', 'schild', 'umhang', 'schwert', 'helm'];
+const PIECES = {
+  stiefel: { label: 'Stiefel', acc: 'die Stiefel', icon: 'M8 3h6v9l4.5 2.5c1.4.8 2 1.8 2 3V20H8z' },
+  beinschienen: { label: 'Beinschienen', acc: 'die Beinschienen', icon: 'M6 3h5v15l-1 3H7l-1-3zM13 3h5v15l-1 3h-3l-1-3z' },
+  handschuhe: { label: 'Handschuhe', acc: 'die Panzerhandschuhe', icon: 'M7 21v-6L4 11l1.5-1.5L8 12V4.5a1.5 1.5 0 013 0V10h.5V3.5a1.5 1.5 0 013 0V10h.5V4.5a1.5 1.5 0 013 0V15l-2 6z' },
+  brustpanzer: { label: 'Brustpanzer', acc: 'den Brustpanzer', icon: 'M6 3l3 2h6l3-2 3 4-2 3v8c0 2-3 3-7 3s-7-1-7-3v-8L3 7z' },
+  schild: { label: 'Schild', acc: 'den Schild', icon: 'M12 2l8 3v6c0 5.5-3.5 9.5-8 11-4.5-1.5-8-5.5-8-11V5z' },
+  umhang: { label: 'Umhang', acc: 'den Umhang', icon: 'M8 3h8l1 2 3 15-4 1.5-4-1.5-4 1.5L4 20 7 5z' },
+  schwert: { label: 'Schwert', acc: 'das Schwert', icon: 'M17.5 2.5L21 3l.5 3.5L11 17l-2-2zM5 14l5 5-1.5 1.5-1.5-1.5L4 22l-2-2 3-3-1.5-1.5z' },
+  helm: { label: 'Helm', acc: 'den Helm', icon: 'M12 2c5 0 8 3.5 8 8v9h-6v-6h-4v6H4v-9c0-4.5 3-8 8-8z' },
+};
+const STAGES = [
+  { name: 'Der dunkle Wald', theme: 'wald', pieces: ['stiefel', 'beinschienen'], ghostSpeed: 2.0,
+    hint: 'Finde die Stiefel und die Beinschienen. Dann öffnet sich das Burgtor.',
+    map: [
+      '#########E#########',
+      '#.......#.#.......#',
+      '#.##.##.#.#.##.##.#',
+      '#.#A..#.....#..H#.#',
+      '#.#.###.###.###.#.#',
+      '#...t.f.......t...#',
+      '#.####.##G##.####.#',
+      '#......#...#......#',
+      '##.###.#...#.###.##',
+      '#..#H..........#A.#',
+      '#.##.###.#.###.##.#',
+      '#....#...#.t.#....#',
+      '#.##.#.#####.#.##.#',
+      '#....f...S...f....#',
+      '###################'] },
+  { name: 'Der Burghof', theme: 'hof', pieces: ['handschuhe', 'brustpanzer'], ghostSpeed: 2.2,
+    hint: 'Hier liegen die Handschuhe und der Brustpanzer. Danach geht es durch die Falltür in den Kerker.',
+    map: [
+      '###################',
+      '#.t..#...E...#..t.#',
+      '#....#.......#....#',
+      '#.A..###.w.###..H.#',
+      '#.................#',
+      '##.##..t...t..##.##',
+      '#f.#....###....#.f#',
+      '#..#.H..#G#..A.#..#',
+      '#..#....#.#....#..#',
+      '##.##.......t.##.##',
+      '#.....##...##.....#',
+      '#.t...#.....#...t.#',
+      '#.....#..S..#.....#',
+      '#f....#.....#....f#',
+      '###################'] },
+  { name: 'Der Kerker', theme: 'kerker', pieces: ['schild', 'umhang'], ghostSpeed: 2.3,
+    hint: 'Hier unten spuken zwei Gespenster! Finde den Schild und den Umhang, dann die Treppe nach oben.',
+    map: [
+      '###################',
+      '#...#..E..#.g.#.A.#',
+      '#.#.#.....#.#.#...#',
+      '#.#...###...#...#.#',
+      '#.#####.#####.###.#',
+      '#.....#...G.....#.#',
+      '###.#.#.#####.#.#.#',
+      '#H#.#...#...#.#...#',
+      '#.#.#####.#.#.###.#',
+      '#.....t...#.....#.#',
+      '#.###.###.#####.#.#',
+      '#.#A#...#.....#...#',
+      '#.#.###.#####.#.###',
+      '#...f.....S..f...H#',
+      '###################'] },
+  { name: 'Der Turm', theme: 'turm', pieces: ['schwert', 'helm'], ghostSpeed: 2.5,
+    hint: 'Schwert und Helm warten im Turm. Dann schnell auf den Thron!',
+    map: [
+      '###################',
+      '#....#...E...#....#',
+      '#.H..#.......#..A.#',
+      '#....##.o.o.##....#',
+      '#.##.....g.....##.#',
+      '#..#..##...##..#..#',
+      '##.#.o.......o.#.##',
+      '#........G........#',
+      '#.####.##.##.####.#',
+      '#.#A.........#....#',
+      '#.#.##o...o##.#H..#',
+      '#...#.......#.#.###',
+      '###.#.##.##.#...#.#',
+      '#f.....#S#.......f#',
+      '###################'] },
+];
+const THEMES = {
+  wald:   { floor: 'grass',  wall: 'tree',  obst: 'bush',   bg: 0x0b1522, outside: 0x0d1d18, hemi: 0.8,  moon: 0.65, exit: 'gate' },
+  hof:    { floor: 'cobble', wall: 'stone', obst: 'crate',  bg: 0x11132b, outside: 0x15132a, hemi: 0.8,  moon: 0.6,  exit: 'trapdoor', wallColor: 0xa79dac, merlons: true },
+  kerker: { floor: 'flag',   wall: 'stone', obst: 'barrel', bg: 0x07080f, outside: 0x07080f, hemi: 0.55, moon: 0.3,  exit: 'stairs',   wallColor: 0x6a7795 },
+  turm:   { floor: 'planks', wall: 'stone', obst: 'crate',  bg: 0x170f22, outside: 0x120c1c, hemi: 0.72, moon: 0.45, exit: 'throne',   wallColor: 0xc2a58e },
+};
+
+/* ================== Grundgerüst ================== */
+const canvas = $('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 200);
+function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+
+const hemi = new THREE.HemisphereLight(0x9aa8ff, 0x3a3050, 0.8); scene.add(hemi);
+const moon = new THREE.DirectionalLight(0xb4c0ff, 0.6); moon.position.set(-10, 20, 8); scene.add(moon);
+const torchLights = [];
+for (let i = 0; i < 4; i++) { const l = new THREE.PointLight(0xffa040, 1.6, 11, 2); scene.add(l); torchLights.push(l); }
+
+const GRAD = (() => { const t = new THREE.DataTexture(new Uint8Array([80, 160, 255]), 3, 1, THREE.LuminanceFormat); t.minFilter = t.magFilter = THREE.NearestFilter; t.generateMipmaps = false; t.needsUpdate = true; return t; })();
+const toon = (color, o = {}) => new THREE.MeshToonMaterial(Object.assign({ color, gradientMap: GRAD }, o));
+const basic = (color, o = {}) => new THREE.MeshBasicMaterial(Object.assign({ color }, o));
+const OUT = basic(0x150d22, { side: THREE.BackSide });
+function mesh(geo, mat, o = 1.06) { const m = new THREE.Mesh(geo, mat); if (o > 1) { const h = new THREE.Mesh(geo, OUT); h.scale.setScalar(o); m.add(h); } return m; }
+
+const M = {
+  skin: toon(0xffd3b3), tunic: toon(0x2f74c0), pants: toon(0x3b2f4f), shoe: toon(0x6b4226), hair: toon(0xb5651d),
+  metal: toon(0xd8e0ea, { emissive: 0x1d2633 }), gold: toon(0xf2c14e, { emissive: 0x3a2a00 }), red: toon(0xd63a55, { emissive: 0x220008 }),
+  redD: toon(0xd63a55, { side: THREE.DoubleSide, emissive: 0x220008 }), goldD: toon(0xf2c14e, { side: THREE.DoubleSide, emissive: 0x3a2a00 }),
+  dark: basic(0x1a1030), white: basic(0xffffff), pink: toon(0xff9aa8), belt: toon(0x5a3a22),
+  wood: toon(0x9a6438), woodD: toon(0x5e3b20), iron: toon(0x4f5566), stone: toon(0x8f8a99), water: basic(0x2f5fa6),
+};
+
+const HEART_GEO = (() => {
+  const s = new THREE.Shape();
+  s.moveTo(5, 5); s.bezierCurveTo(5, 5, 4, 0, 0, 0); s.bezierCurveTo(-6, 0, -6, 7, -6, 7);
+  s.bezierCurveTo(-6, 11, -3, 15.4, 5, 19); s.bezierCurveTo(12, 15.4, 16, 11, 16, 7);
+  s.bezierCurveTo(16, 7, 16, 0, 10, 0); s.bezierCurveTo(7, 0, 5, 5, 5, 5);
+  const g = new THREE.ExtrudeGeometry(s, { depth: 4, bevelEnabled: true, bevelThickness: 1.5, bevelSize: 1.5, bevelSegments: 3, curveSegments: 14 });
+  g.center(); g.scale(1 / 21, 1 / 21, 1 / 21); g.rotateZ(Math.PI); return g;
+})();
+function heartMesh(size, mat, o = 1) { const m = mesh(HEART_GEO, mat, o); m.scale.setScalar(size); return m; }
+
+const GLOW = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'); const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.3, 'rgba(255,255,255,.45)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+function glow(color, size, opacity = 1) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false })); s.scale.setScalar(size); return s; }
+
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+/* ---------- gemalte Texturen ---------- */
+const TEX = {};
+function makeTex(kind) {
+  if (TEX[kind]) return TEX[kind];
+  const n = 128, c = document.createElement('canvas'); c.width = c.height = n; const x = c.getContext('2d'); const R = rng(kind.length * 977 + 13);
+  const rr = (px, py, w, h, r) => { x.beginPath(); x.moveTo(px + r, py); x.arcTo(px + w, py, px + w, py + h, r); x.arcTo(px + w, py + h, px, py + h, r); x.arcTo(px, py + h, px, py, r); x.arcTo(px, py, px + w, py, r); x.closePath(); };
+  if (kind === 'grass') {
+    x.fillStyle = '#3a6844'; x.fillRect(0, 0, n, n);
+    for (let i = 0; i < 140; i++) { const px = R() * n, py = R() * n; x.strokeStyle = R() < .5 ? '#4f8b56' : '#2c5235'; x.lineWidth = 2; x.beginPath(); x.moveTo(px, py); x.lineTo(px + R() * 4 - 2, py - 4 - R() * 6); x.stroke(); }
+    for (let i = 0; i < 3; i++) { x.fillStyle = ['#f3d6ff', '#fff2a8', '#ffd0dc'][i]; x.beginPath(); x.arc(R() * n, R() * n, 2.5, 0, 7); x.fill(); }
+  } else if (kind === 'cobble') {
+    x.fillStyle = '#3b3542'; x.fillRect(0, 0, n, n);
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { rr(i * 32 + 2 + R() * 3, j * 32 + 2 + R() * 3, 26, 26, 9); x.fillStyle = ['#8b8394', '#7d7686', '#9a92a2'][(R() * 3) | 0]; x.fill(); x.strokeStyle = '#26202c'; x.lineWidth = 2.5; x.stroke(); }
+  } else if (kind === 'flag') {
+    x.fillStyle = '#171a22'; x.fillRect(0, 0, n, n);
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { rr(i * 64 + 3, j * 64 + 3, 58, 58, 6); x.fillStyle = (i + j) % 2 ? '#454c5f' : '#3c4253'; x.fill(); x.strokeStyle = '#101219'; x.lineWidth = 3; x.stroke(); }
+    x.strokeStyle = '#22262f'; x.lineWidth = 2; x.beginPath(); x.moveTo(20, 30); x.lineTo(34, 40); x.lineTo(30, 52); x.moveTo(90, 80); x.lineTo(100, 96); x.stroke();
+  } else if (kind === 'planks') {
+    x.fillStyle = '#3b2616'; x.fillRect(0, 0, n, n);
+    for (let j = 0; j < 4; j++) { x.fillStyle = ['#7a5232', '#6e4a2c', '#835a37', '#74502f'][j]; x.fillRect(0, j * 32 + 1, n, 30); x.strokeStyle = 'rgba(40,24,12,.5)'; x.lineWidth = 1.5; for (let k = 0; k < 3; k++) { x.beginPath(); x.moveTo(0, j * 32 + 8 + k * 7); x.bezierCurveTo(40, j * 32 + 6 + k * 7, 80, j * 32 + 11 + k * 7, n, j * 32 + 8 + k * 7); x.stroke(); } x.fillStyle = '#2b1a0e'; x.beginPath(); x.arc(6, j * 32 + 16, 2, 0, 7); x.arc(122, j * 32 + 16, 2, 0, 7); x.fill(); }
+  } else if (kind === 'brick') {
+    x.fillStyle = '#2c2830'; x.fillRect(0, 0, n, n);
+    for (let j = 0; j < 8; j++) for (let i = -1; i < 5; i++) { const off = j % 2 ? 16 : 0; rr(i * 32 + off + 2, j * 16 + 2, 28, 12, 3); x.fillStyle = ['#d4d2da', '#c2c0ca', '#cbc6d0'][(R() * 3) | 0]; x.fill(); }
+  } else if (kind === 'crate') {
+    x.fillStyle = '#a06e3e'; x.fillRect(0, 0, n, n);
+    x.strokeStyle = '#5e3b20'; x.lineWidth = 12; x.strokeRect(6, 6, n - 12, n - 12);
+    x.lineWidth = 10; x.beginPath(); x.moveTo(12, 12); x.lineTo(n - 12, n - 12); x.moveTo(n - 12, 12); x.lineTo(12, n - 12); x.stroke();
+    x.strokeStyle = '#2b1a0e'; x.lineWidth = 3; x.strokeRect(1.5, 1.5, n - 3, n - 3);
+  }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; TEX[kind] = t; return t;
+}
+
+/* ================== Figuren ================== */
+function buildKnight() {
+  const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
+  const parts = {}; ORDER.forEach(k => parts[k] = []);
+  const hide = (m, k) => { m.visible = false; parts[k].push(m); return m; };
+  const legs = [], arms = [];
+  for (const s of [-1, 1]) {
+    const hip = new THREE.Group(); hip.position.set(0.15 * s, 0.72, 0); body.add(hip); legs.push(hip);
+    const leg = mesh(new THREE.CylinderGeometry(0.1, 0.09, 0.6, 10), M.pants, 1.12); leg.position.y = -0.32; hip.add(leg);
+    const foot = mesh(new THREE.BoxGeometry(0.18, 0.13, 0.3), M.shoe, 1.1); foot.position.set(0, -0.66, 0.05); hip.add(foot);
+    const boot = mesh(new THREE.BoxGeometry(0.24, 0.3, 0.36), M.metal, 1.08); boot.position.set(0, -0.58, 0.05); hip.add(hide(boot, 'stiefel'));
+    const greave = mesh(new THREE.CylinderGeometry(0.14, 0.13, 0.36, 12), M.metal, 1.08); greave.position.y = -0.28; hip.add(hide(greave, 'beinschienen'));
+    const knee = mesh(new THREE.SphereGeometry(0.11, 10, 8), M.gold, 1.1); knee.position.set(0, -0.12, 0.09); hip.add(hide(knee, 'beinschienen'));
+  }
+  const torso = mesh(new THREE.CylinderGeometry(0.24, 0.3, 0.6, 14), M.tunic, 1.06); torso.position.y = 1.0; body.add(torso);
+  const skirt = mesh(new THREE.CylinderGeometry(0.3, 0.37, 0.24, 14), M.tunic, 1.06); skirt.position.y = 0.7; body.add(skirt);
+  const belt = mesh(new THREE.CylinderGeometry(0.31, 0.31, 0.08, 14), M.belt, 1.05); belt.position.y = 0.8; body.add(belt);
+  const chest = mesh(new THREE.CylinderGeometry(0.29, 0.34, 0.5, 14), M.metal, 1.05); chest.position.y = 1.06; body.add(hide(chest, 'brustpanzer'));
+  const emb = heartMesh(0.17, M.red); emb.position.set(0, 1.1, 0.33); body.add(hide(emb, 'brustpanzer'));
+  for (const s of [-1, 1]) { const p = mesh(new THREE.SphereGeometry(0.15, 12, 10), M.metal, 1.08); p.position.set(0.31 * s, 1.27, 0); p.scale.y = 0.75; body.add(hide(p, 'brustpanzer')); }
+  for (const s of [-1, 1]) {
+    const sh = new THREE.Group(); sh.position.set(0.34 * s, 1.24, 0); body.add(sh); arms.push(sh);
+    const arm = mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.48, 10), M.tunic, 1.12); arm.position.y = -0.24; sh.add(arm);
+    const hand = mesh(new THREE.SphereGeometry(0.09, 10, 8), M.skin, 1.1); hand.position.y = -0.52; sh.add(hand);
+    const glove = mesh(new THREE.SphereGeometry(0.13, 10, 8), M.metal, 1.08); glove.position.y = -0.52; sh.add(hide(glove, 'handschuhe'));
+    const cuff = mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.14, 10), M.metal, 1.08); cuff.position.y = -0.4; sh.add(hide(cuff, 'handschuhe'));
+    if (s < 0) {
+      const shield = new THREE.Group(); shield.position.set(-0.15, -0.38, 0.06); sh.add(hide(shield, 'schild'));
+      const disk = mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.07, 22), M.red, 1.07); disk.rotation.z = Math.PI / 2; shield.add(disk);
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.035, 8, 26), M.gold); rim.rotation.y = Math.PI / 2; shield.add(rim);
+      const em = heartMesh(0.24, M.gold); em.rotation.y = -Math.PI / 2; em.position.x = -0.05; shield.add(em);
+    } else {
+      const sword = new THREE.Group(); sword.position.set(0, -0.55, 0.04); sword.rotation.x = Math.PI / 2 * 0.85; sh.add(hide(sword, 'schwert'));
+      const blade = mesh(new THREE.BoxGeometry(0.07, 0.8, 0.025), M.metal, 1.12); blade.position.y = 0.5; sword.add(blade);
+      const guard = mesh(new THREE.BoxGeometry(0.32, 0.06, 0.07), M.gold, 1.1); guard.position.y = 0.08; sword.add(guard);
+      const grip = mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.18, 8), M.belt, 1.1); grip.position.y = -0.03; sword.add(grip);
+      const pom = mesh(new THREE.SphereGeometry(0.05, 8, 6), M.gold, 1.1); pom.position.y = -0.14; sword.add(pom);
+    }
+  }
+  const capeG = new THREE.Group(); capeG.position.set(0, 1.32, 0); body.add(hide(capeG, 'umhang'));
+  const cape = new THREE.Mesh(new THREE.CylinderGeometry(0.31, 0.5, 1.0, 16, 1, true, Math.PI / 2, Math.PI), M.redD); cape.position.y = -0.5; capeG.add(cape);
+  const clasp = mesh(new THREE.SphereGeometry(0.06, 8, 6), M.gold, 1.1); clasp.position.set(0, -0.02, 0.27); capeG.add(clasp);
+
+  const head = new THREE.Group(); head.position.y = 1.62; body.add(head);
+  head.add(mesh(new THREE.SphereGeometry(0.3, 20, 16), M.skin, 1.05));
+  for (const s of [-1, 1]) {
+    const e = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), M.dark); e.position.set(0.11 * s, 0.03, 0.27); e.scale.y = 1.3; head.add(e);
+    const w = new THREE.Mesh(new THREE.SphereGeometry(0.015, 6, 4), M.white); w.position.set(0.11 * s + 0.015, 0.05, 0.31); head.add(w);
+    const ch = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), M.pink); ch.position.set(0.18 * s, -0.07, 0.22); ch.scale.set(1, 0.6, 0.4); head.add(ch);
+  }
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.013, 6, 12, Math.PI), M.dark); smile.rotation.z = Math.PI; smile.position.set(0, -0.09, 0.285); head.add(smile);
+  const hairCap = mesh(new THREE.SphereGeometry(0.325, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.5), M.hair, 1.05); hairCap.rotation.x = -0.3; hairCap.position.set(0, 0.03, -0.02); head.add(hairCap);
+  for (let i = 0; i < 3; i++) { const b = mesh(new THREE.SphereGeometry(0.1 - i * 0.012, 10, 8), M.hair, 1.1); b.position.set(0, -0.08 - i * 0.14, -0.3 - i * 0.03); head.add(b); }
+  const bow = mesh(new THREE.BoxGeometry(0.16, 0.06, 0.06), M.red, 1.15); bow.position.set(0, -0.45, -0.37); head.add(bow);
+  const helm = new THREE.Group(); head.add(hide(helm, 'helm'));
+  const dome = mesh(new THREE.SphereGeometry(0.355, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.55), M.metal, 1.05); dome.rotation.x = -0.18; helm.add(dome);
+  const nose = mesh(new THREE.BoxGeometry(0.05, 0.2, 0.05), M.metal, 1.12); nose.position.set(0, 0.05, 0.33); helm.add(nose);
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.03, 8, 28), M.gold); band.rotation.x = Math.PI / 2 - 0.18; band.position.y = 0.06; helm.add(band);
+  for (let i = 0; i < 4; i++) { const p = mesh(new THREE.SphereGeometry(0.1 - i * 0.012, 10, 8), M.red, 1.1); p.position.set(0, 0.38 - i * 0.04, -0.02 - i * 0.13); helm.add(p); }
+  const crown = new THREE.Group(); crown.visible = false; head.add(crown);
+  crown.add(new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.21, 0.14, 18, 1, true), M.goldD));
+  for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; const sp = mesh(new THREE.ConeGeometry(0.05, 0.16, 6), M.gold, 1.1); sp.position.set(Math.sin(a) * 0.22, 0.14, Math.cos(a) * 0.22); crown.add(sp); const gem = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), M.red); gem.position.set(Math.sin(a) * 0.235, 0, Math.cos(a) * 0.235); crown.add(gem); }
+  return { root, body, legs, arms, capeG, head, parts, hairCap, crown };
+}
+
+function pieceModel(name) {
+  const g = new THREE.Group();
+  if (name === 'stiefel') for (const s of [-1, 1]) { const a = mesh(new THREE.BoxGeometry(0.3, 0.45, 0.3), M.metal, 1.07); a.position.set(s * 0.2, 0.05, 0); g.add(a); const t = mesh(new THREE.BoxGeometry(0.3, 0.18, 0.24), M.metal, 1.08); t.position.set(s * 0.2, -0.08, 0.24); g.add(t); const r = mesh(new THREE.BoxGeometry(0.32, 0.06, 0.32), M.gold, 1.1); r.position.set(s * 0.2, 0.28, 0); g.add(r); }
+  if (name === 'beinschienen') for (const s of [-1, 1]) { const a = mesh(new THREE.CylinderGeometry(0.17, 0.15, 0.7, 12), M.metal, 1.07); a.position.x = s * 0.22; g.add(a); const k = mesh(new THREE.SphereGeometry(0.14, 10, 8), M.gold, 1.1); k.position.set(s * 0.22, 0.25, 0.12); g.add(k); }
+  if (name === 'handschuhe') for (const s of [-1, 1]) { const a = mesh(new THREE.SphereGeometry(0.2, 12, 10), M.metal, 1.07); a.position.x = s * 0.25; g.add(a); const c = mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.22, 12), M.metal, 1.07); c.position.set(s * 0.25, -0.24, 0); g.add(c); const b = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.03, 6, 16), M.gold); b.rotation.x = Math.PI / 2; b.position.set(s * 0.25, -0.15, 0); g.add(b); }
+  if (name === 'brustpanzer') { g.add(mesh(new THREE.CylinderGeometry(0.36, 0.42, 0.66, 16), M.metal, 1.05)); const e = heartMesh(0.24, M.red); e.position.set(0, 0.05, 0.41); g.add(e); for (const s of [-1, 1]) { const p = mesh(new THREE.SphereGeometry(0.18, 10, 8), M.metal, 1.07); p.position.set(s * 0.38, 0.28, 0); p.scale.y = 0.7; g.add(p); } }
+  if (name === 'schild') { const d = mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.09, 26), M.red, 1.05); d.rotation.x = Math.PI / 2; g.add(d); const r = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.05, 8, 30), M.gold); g.add(r); const e = heartMesh(0.36, M.gold); e.position.z = 0.07; g.add(e); }
+  if (name === 'umhang') { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.6, 1.1, 18, 1, true, Math.PI / 2, Math.PI), M.redD); g.add(c); const cl = mesh(new THREE.SphereGeometry(0.09, 8, 6), M.gold, 1.1); cl.position.set(0, 0.52, 0.3); g.add(cl); }
+  if (name === 'schwert') { const b = mesh(new THREE.BoxGeometry(0.11, 1.1, 0.04), M.metal, 1.1); b.position.y = 0.25; g.add(b); const gd = mesh(new THREE.BoxGeometry(0.46, 0.09, 0.1), M.gold, 1.08); gd.position.y = -0.33; g.add(gd); const gr = mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.25, 8), M.belt, 1.1); gr.position.y = -0.5; g.add(gr); const p = mesh(new THREE.SphereGeometry(0.08, 8, 6), M.gold, 1.1); p.position.y = -0.66; g.add(p); }
+  if (name === 'helm') { const d = mesh(new THREE.SphereGeometry(0.42, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.6), M.metal, 1.05); g.add(d); const n = mesh(new THREE.BoxGeometry(0.07, 0.3, 0.07), M.metal, 1.1); n.position.set(0, -0.05, 0.4); g.add(n); for (let i = 0; i < 4; i++) { const p = mesh(new THREE.SphereGeometry(0.12 - i * 0.015, 10, 8), M.red, 1.1); p.position.set(0, 0.45 - i * 0.05, -i * 0.15); g.add(p); } }
+  return g;
+}
+
+function buildGhost() {
+  const g = new THREE.Group(), inner = new THREE.Group(); g.add(inner);
+  const mat = toon(0xf1eeff, { emissive: 0x6b5bc4, emissiveIntensity: 0.5 });
+  const pts = [new THREE.Vector2(0, -0.22), new THREE.Vector2(0.62, -0.3)];
+  for (let i = 0; i <= 12; i++) { const a = i / 12 * Math.PI / 2; pts.push(new THREE.Vector2(Math.cos(a) * 0.62, 0.3 + Math.sin(a) * 0.62)); }
+  inner.add(mesh(new THREE.LatheGeometry(pts, 26), mat, 1.05));
+  const tails = [];
+  for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2; const t = mesh(new THREE.ConeGeometry(0.17, 0.42, 10), mat, 1.1); t.rotation.x = Math.PI; t.position.set(Math.cos(a) * 0.44, -0.42, Math.sin(a) * 0.44); inner.add(t); tails.push(t); }
+  for (const s of [-1, 1]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 10), M.dark); e.scale.set(0.9, 1.4, 0.6); e.position.set(0.2 * s, 0.52, 0.53); inner.add(e); const w = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 4), M.white); w.position.set(0.2 * s + 0.03, 0.58, 0.6); inner.add(w); }
+  const mouth = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 10), M.dark); mouth.scale.set(1, 1.3, 0.5); mouth.position.set(0, 0.2, 0.59); inner.add(mouth);
+  const cheeks = new THREE.Group(); cheeks.visible = false; inner.add(cheeks);
+  for (const s of [-1, 1]) { const c = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), M.pink); c.scale.set(1, 0.6, 0.4); c.position.set(0.36 * s, 0.33, 0.5); cheeks.add(c); }
+  const arms = [];
+  for (const s of [-1, 1]) { const a = mesh(new THREE.SphereGeometry(0.16, 10, 8), mat, 1.1); a.position.set(0.66 * s, 0.05, 0.12); inner.add(a); arms.push(a); }
+  const aura = glow(0x9d8cff, 3.2, 0.35); aura.position.y = 0.3; g.add(aura);
+  g.scale.setScalar(1.25);
+  return { g, inner, tails, arms, mouth, cheeks };
+}
+
+const knight = buildKnight(); scene.add(knight.root);
+const marker = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.66, 36), basic(0xffd36b, { transparent: true, opacity: 0.55, depthTest: false, side: THREE.DoubleSide }));
+marker.rotation.x = -Math.PI / 2; marker.renderOrder = 10; scene.add(marker);
+const blob = new THREE.Mesh(new THREE.CircleGeometry(0.5, 24), basic(0x000000, { transparent: true, opacity: 0.35, depthWrite: false })); blob.rotation.x = -Math.PI / 2; scene.add(blob);
+
+/* Fee */
+const fairy = new THREE.Group(); scene.add(fairy);
+fairy.add(new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 10), basic(0xfff4fb)));
+fairy.add(glow(0xff9de6, 1.5, 0.95));
+const wings = [];
+for (const s of [-1, 1]) { const p = new THREE.Group(); fairy.add(p); const w = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.2), basic(0xc8ecff, { transparent: true, opacity: 0.75, side: THREE.DoubleSide })); w.position.x = 0.16 * s; w.rotation.z = 0.3 * s; p.add(w); wings.push(p); }
+const fairyLight = new THREE.PointLight(0xffc6f0, 1.3, 8, 2); fairy.add(fairyLight);
+
+/* Glitzer-Teilchen */
+const sparks = [];
+for (let i = 0; i < 70; i++) { const s = glow(0xffffff, 0.4, 0); s.visible = false; scene.add(s); sparks.push({ s, life: 0, max: 1, vx: 0, vy: 0, vz: 0, size: 0.4 }); }
+let sparkI = 0;
+function spark(x, y, z, color, vx = 0, vy = 0, vz = 0, life = 1, size = 0.45) {
+  const p = sparks[sparkI++ % sparks.length]; p.s.visible = true; p.s.position.set(x, y, z); p.s.material.color.setHex(color);
+  Object.assign(p, { life, max: life, vx, vy, vz, size });
+}
+function burst(x, y, z, color, n = 16, sp = 3) { for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, b = Math.random() * 2 - 1; spark(x, y, z, color, Math.cos(a) * sp * (1 - b * b) ** .5, b * sp + 1, Math.sin(a) * sp * (1 - b * b) ** .5, 0.7 + Math.random() * 0.5, 0.5); } }
+
+/* ================== Ton ================== */
+let AC = null, soundOn = true;
+function tone(f1, f2, dur, type = 'sine', vol = 0.1, delay = 0) {
+  if (!AC || !soundOn) return; const t = AC.currentTime + delay; const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); o.connect(g).connect(AC.destination); o.start(t); o.stop(t + dur + 0.05);
+}
+const sfx = {
+  piece() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, f, 0.18, 'triangle', 0.12, i * 0.08)); },
+  heart() { tone(660, 990, 0.15, 'sine', 0.12); tone(990, 1320, 0.22, 'sine', 0.1, 0.1); },
+  shield() { tone(300, 700, 0.25, 'square', 0.06); tone(700, 500, 0.3, 'triangle', 0.08, 0.15); },
+  lost() { tone(500, 120, 0.8, 'sawtooth', 0.06); },
+  open() { [392, 523, 659, 784].forEach((f, i) => tone(f, f * 1.01, 0.3, 'triangle', 0.12, i * 0.12)); },
+  fanfare() { [523, 523, 523, 659, 784, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.24, 'square', 0.055, i * 0.17)); },
+  boo() {
+    if (!AC || !soundOn) return; const t = AC.currentTime; const o = AC.createOscillator(), l = AC.createOscillator(), lg = AC.createGain(), g = AC.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(260, t); o.frequency.linearRampToValueAtTime(190, t + 1.3); l.frequency.value = 6; lg.gain.value = 18;
+    l.connect(lg).connect(o.frequency); g.gain.setValueAtTime(0.001, t); g.gain.linearRampToValueAtTime(0.09, t + 0.25); g.gain.exponentialRampToValueAtTime(0.001, t + 1.4);
+    o.connect(g).connect(AC.destination); o.start(t); l.start(t); o.stop(t + 1.5); l.stop(t + 1.5);
+  },
+};
+
+/* ================== Zustand ================== */
+const G = { state: 'title', stage: 0, hearts: 1, points: 0, have: new Set(), invuln: 0, t: 0, move: 0, phase: 0, yaw: Math.PI,
+  ghosts: [], items: [], heartItems: [], torches: [], flames: [], flies: [], exit: null, grid: null, cols: 0, rows: 0, start: { x: 0, z: 0 },
+  path: null, pathT: 0, trailT: 0, trailK: 1, lockToastT: 0, booT: 0, lightT: 0, endT: 0, confetti: [], endHearts: [] };
+let world = null;
+
+const _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
+function mat4(x, y, z, ry = 0, s = 1, sy = s) { _e.set(0, ry, 0); _q.setFromEuler(_e); _p.set(x, y, z); _s.set(s, sy, s); return new THREE.Matrix4().compose(_p, _q, _s); }
+function inst(geo, mat, list, o = 1.05) {
+  if (!list.length) return; const im = new THREE.InstancedMesh(geo, mat, list.length); list.forEach((m, k) => im.setMatrixAt(k, m)); im.frustumCulled = false; world.add(im);
+  if (o > 1) { const om = new THREE.InstancedMesh(geo, OUT, list.length); const sc = new THREE.Matrix4().makeScale(o, o, o); list.forEach((m, k) => om.setMatrixAt(k, m.clone().multiply(sc))); om.frustumCulled = false; world.add(om); }
+}
+function flame(x, y, z, withSpot = true) {
+  const f = new THREE.Group(); f.position.set(x, y, z);
+  const outer = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.46, 10), basic(0xff8a2a)); outer.position.y = 0.2; f.add(outer);
+  const inner = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.28, 8), basic(0xffe27a)); inner.position.y = 0.14; f.add(inner);
+  const gl = glow(0xff9a3c, 1.6, 0.8); gl.position.y = 0.2; f.add(gl);
+  f.userData.seed = Math.random() * 10; world.add(f); G.flames.push(f);
+  if (withSpot) G.torches.push(new THREE.Vector3(x, y + 0.3, z));
+}
+const SOLID = new Set(['#', 't', 'f', 'w', 'o']);
+function solid(c, r) {
+  if (c < 0 || r < 0 || c >= G.cols || r >= G.rows) return true;
+  const ch = G.grid[r][c]; if (ch === 'E') return G.exit.locked; return SOLID.has(ch);
+}
+const blocked = (x, z, rad = 0.42) => solid(Math.floor((x - rad + 1) / 2), Math.floor((z - rad + 1) / 2)) || solid(Math.floor((x + rad + 1) / 2), Math.floor((z - rad + 1) / 2)) || solid(Math.floor((x - rad + 1) / 2), Math.floor((z + rad + 1) / 2)) || solid(Math.floor((x + rad + 1) / 2), Math.floor((z + rad + 1) / 2));
+
+/* ---------- Ausgänge ---------- */
+function buildExit(kind, x, z, th) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); world.add(g);
+  const e = { g, x, z, kind, locked: true, open: 0, doors: [] };
+  const wallMat = toon(th.wallColor || 0x9a92a6, { map: makeTex('brick') });
+  if (kind === 'gate') {
+    for (const s of [-1, 1]) {
+      const tw = mesh(new THREE.CylinderGeometry(0.8, 0.9, 3.8, 16), wallMat, 1.04); tw.position.set(1.8 * s, 1.9, 0.2); g.add(tw);
+      const roof = mesh(new THREE.ConeGeometry(1.0, 1.5, 16), M.red, 1.05); roof.position.set(1.8 * s, 4.55, 0.2); g.add(roof);
+      const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.3), M.redD); flag.position.set(1.8 * s + 0.25, 5.5, 0.2); g.add(flag);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.8, 4), M.woodD); pole.position.set(1.8 * s, 5.4, 0.2); g.add(pole);
+      flame(x + 1.8 * s, 1.9, z + 1.1);
+      const hinge = new THREE.Group(); hinge.position.set(-1.0 * s, 0, 0.55); g.add(hinge);
+      const door = mesh(new THREE.BoxGeometry(1.0, 2.5, 0.16), M.wood, 1.04); door.position.set(0.5 * s, 1.25, 0); hinge.add(door);
+      const bandM = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.1, 0.2), M.iron); bandM.position.set(0.5 * s, 1.8, 0); hinge.add(bandM);
+      const bandM2 = bandM.clone(); bandM2.position.y = 0.7; hinge.add(bandM2);
+      hinge.userData.s = s; e.doors.push(hinge);
+    }
+    const lintel = mesh(new THREE.BoxGeometry(2.8, 1.3, 1.1), wallMat, 1.04); lintel.position.set(0, 3.15, 0.2); g.add(lintel);
+    const heart = heartMesh(0.6, M.red, 1.1); heart.position.set(0, 3.15, 0.8); g.add(heart);
+    e.apply = o => e.doors.forEach(h => { h.rotation.y = h.userData.s < 0 ? o * 1.5 : -o * 1.5; });
+  } else if (kind === 'trapdoor') {
+    const frame = mesh(new THREE.BoxGeometry(1.9, 0.12, 1.9), M.woodD, 1.03); frame.position.y = 0.06; g.add(frame);
+    const hole = new THREE.Mesh(new THREE.PlaneGeometry(1.55, 1.55), basic(0x050308)); hole.rotation.x = -Math.PI / 2; hole.position.y = 0.125; g.add(hole);
+    const hinge = new THREE.Group(); hinge.position.set(0, 0.13, -0.8); g.add(hinge);
+    const door = mesh(new THREE.BoxGeometry(1.6, 0.09, 1.6), M.wood, 1.03); door.position.set(0, 0.045, 0.8); hinge.add(door);
+    for (const zz of [0.35, 1.25]) { const b = new THREE.Mesh(new THREE.BoxGeometry(1.62, 0.11, 0.12), M.iron); b.position.set(0, 0.05, zz); hinge.add(b); }
+    const ringH = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.03, 6, 14), M.iron); ringH.rotation.x = Math.PI / 2; ringH.position.set(0, 0.11, 1.3); hinge.add(ringH);
+    e.doors.push(hinge); e.apply = o => { hinge.rotation.x = -o * 1.9; };
+  } else if (kind === 'stairs') {
+    for (let i = 0; i < 6; i++) { const st = mesh(new THREE.BoxGeometry(1.9, 0.28 * (i + 1), 0.32), M.stone, 1.03); st.position.set(0, 0.14 * (i + 1), 0.8 - i * 0.32); g.add(st); }
+    const arch = mesh(new THREE.TorusGeometry(1.0, 0.18, 8, 20, Math.PI), wallMat, 1.05); arch.position.set(0, 1.9, -0.9); g.add(arch);
+    const gate = new THREE.Group(); g.add(gate); e.doors.push(gate);
+    for (let i = -3; i <= 3; i++) { const b = mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.2, 6), M.iron, 1.2); b.position.set(i * 0.27, 1.1, 1.0); gate.add(b); }
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.1, 0.1), M.iron); bar.position.set(0, 1.9, 1.0); gate.add(bar);
+    e.apply = o => { gate.position.y = o * 2.4; };
+  } else if (kind === 'throne') {
+    const seat = mesh(new THREE.BoxGeometry(1.5, 0.6, 1.2), M.gold, 1.04); seat.position.y = 0.3; g.add(seat);
+    const cush = mesh(new THREE.BoxGeometry(1.2, 0.18, 0.95), M.red, 1.06); cush.position.set(0, 0.68, 0.05); g.add(cush);
+    const back = mesh(new THREE.BoxGeometry(1.5, 2.3, 0.28), M.gold, 1.04); back.position.set(0, 1.45, -0.55); g.add(back);
+    const pad = mesh(new THREE.BoxGeometry(1.1, 1.6, 0.1), M.red, 1.06); pad.position.set(0, 1.45, -0.38); g.add(pad);
+    const top = heartMesh(0.8, M.red, 1.08); top.position.set(0, 2.85, -0.55); g.add(top);
+    for (const s of [-1, 1]) { const arm = mesh(new THREE.BoxGeometry(0.22, 0.4, 1.1), M.gold, 1.06); arm.position.set(0.75 * s, 0.85, 0); g.add(arm); }
+    e.apply = () => {};
+  }
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 7, 28, 1, true), basic(0xffe08a, { transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  beam.position.y = 3.5; g.add(beam); e.beam = beam;
+  e.c = Math.round(x / 2); e.r = Math.round(z / 2);
+  return e;
+}
+
+/* ---------- Stufe bauen ---------- */
+function buildStage(i) {
+  if (world) { scene.remove(world); world.traverse(o => { if (o.geometry && o.geometry !== HEART_GEO) o.geometry.dispose(); }); }
+  world = new THREE.Group(); scene.add(world);
+  const st = STAGES[i], th = THEMES[st.theme], map = st.map, rows = map.length, cols = map[0].length, R = rng(i * 31 + 7);
+  Object.assign(G, { cols, rows, grid: map.map(r => r.split('')), items: [], heartItems: [], torches: [], flames: [], flies: [], ghosts: [], path: null });
+  scene.background = new THREE.Color(th.bg); scene.fog = new THREE.Fog(th.bg, 18, 42);
+  hemi.intensity = th.hemi; moon.intensity = th.moon;
+
+  const ft = makeTex(th.floor).clone(); ft.needsUpdate = true; ft.repeat.set(cols, rows);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(cols * 2, rows * 2), toon(0xffffff, { map: ft })); floor.rotation.x = -Math.PI / 2; floor.position.set(cols - 1, 0, rows - 1); world.add(floor);
+  const under = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), basic(th.outside)); under.rotation.x = -Math.PI / 2; under.position.set(cols - 1, -0.03, rows - 1); world.add(under);
+
+  const walls = [], merlons = [], trunks = [], c1 = [], c2 = [], c3 = [], bushes = [], crates = [];
+  const wallH = 2.1, wallMat = toon(th.wallColor || 0x999999, { map: makeTex('brick') });
+  let pieceIdx = 0;
+  const addTree = (x, z) => { const ry = R() * 6.28, s = 0.85 + R() * 0.15, jx = x + (R() - .5) * 0.15, jz = z + (R() - .5) * 0.15;
+    trunks.push(mat4(jx, 0.55 * s, jz, ry, s)); c1.push(mat4(jx, 1.5 * s, jz, ry, s)); c2.push(mat4(jx, 2.15 * s, jz, ry + 0.4, s)); c3.push(mat4(jx, 2.7 * s, jz, ry + 0.8, s)); };
+  if (th.wall === 'tree') for (let r = -3; r < rows + 3; r++) for (let c = -3; c < cols + 3; c++) if ((r < 0 || c < 0 || r >= rows || c >= cols) && R() < 0.8) addTree(c * 2, r * 2);
+  const isFloor = (c, r) => r >= 0 && r < rows && c >= 0 && c < cols && !SOLID.has(map[r][c]) && map[r][c] !== 'E';
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const ch = map[r][c], x = c * 2, z = r * 2;
+    if (ch === '#') {
+      if (th.wall === 'tree') {
+        addTree(x, z);
+      } else {
+        walls.push(mat4(x, wallH / 2, z));
+        if (th.merlons) { merlons.push(mat4(x - 0.55, wallH + 0.25, z)); merlons.push(mat4(x + 0.55, wallH + 0.25, z)); }
+        if (isFloor(c, r + 1) && (c * 7 + r * 3) % 5 === 0) {
+          const br = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.4), M.iron); br.position.set(x, 1.45, z + 1.15); world.add(br);
+          flame(x, 1.52, z + 1.3);
+        }
+      }
+    } else if (ch === 't') {
+      if (th.obst === 'bush') { for (let k = 0; k < 3; k++) bushes.push(mat4(x + (R() - .5) * 0.8, 0.45 + R() * 0.2, z + (R() - .5) * 0.8, 0, 0.75 + R() * 0.3)); }
+      else if (th.obst === 'crate') crates.push(mat4(x, 0.65, z, (R() - .5) * 0.5));
+      else {
+        for (const [dx, dz] of [[-0.35, -0.3], [0.4, 0.2]]) {
+          const b = mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.1, 14), M.wood, 1.05); b.position.set(x + dx, 0.55, z + dz); world.add(b);
+          for (const yy of [0.25, 0.85]) { const ring = new THREE.Mesh(new THREE.TorusGeometry(0.43, 0.035, 6, 18), M.iron); ring.rotation.x = Math.PI / 2; ring.position.set(x + dx, yy, z + dz); world.add(ring); }
+        }
+      }
+    } else if (ch === 'o') {
+      const p = mesh(new THREE.CylinderGeometry(0.5, 0.55, 2.4, 16), wallMat, 1.04); p.position.set(x, 1.2, z); world.add(p);
+      for (const yy of [0.12, 2.45]) { const b = mesh(new THREE.BoxGeometry(1.25, 0.25, 1.25), wallMat, 1.04); b.position.set(x, yy, z); world.add(b); }
+    } else if (ch === 'w') {
+      const ring = mesh(new THREE.CylinderGeometry(0.85, 0.9, 0.8, 20), M.stone, 1.04); ring.position.set(x, 0.4, z); world.add(ring);
+      const wat = new THREE.Mesh(new THREE.CircleGeometry(0.72, 20), M.water); wat.rotation.x = -Math.PI / 2; wat.position.set(x, 0.81, z); world.add(wat);
+      for (const s of [-1, 1]) { const post = mesh(new THREE.BoxGeometry(0.14, 1.8, 0.14), M.woodD, 1.1); post.position.set(x + 0.8 * s, 1.3, z); world.add(post); }
+      const roof = mesh(new THREE.ConeGeometry(1.3, 0.8, 4), M.red, 1.05); roof.rotation.y = Math.PI / 4; roof.position.set(x, 2.55, z); world.add(roof);
+    } else if (ch === 'f') {
+      const post = mesh(new THREE.CylinderGeometry(0.08, 0.11, 1.5, 8), M.woodD, 1.1); post.position.set(x, 0.75, z); world.add(post);
+      const bowl = mesh(new THREE.CylinderGeometry(0.24, 0.12, 0.2, 10), M.iron, 1.08); bowl.position.set(x, 1.55, z); world.add(bowl);
+      flame(x, 1.62, z);
+    } else if (ch === 'S') G.start = { x, z };
+    else if (ch === 'G' || ch === 'g') G.ghosts.push({ sx: x, sz: z });
+    else if (ch === 'A') addPiece(st.pieces[pieceIdx++], x, z);
+    else if (ch === 'H') addHeart(x, z);
+    else if (ch === 'E') G.exit = buildExit(th.exit, x, z, th);
+  }
+  inst(new THREE.BoxGeometry(2, wallH, 2), wallMat, walls, 1.025);
+  inst(new THREE.BoxGeometry(0.55, 0.5, 0.55), wallMat, merlons, 1.08);
+  inst(new THREE.CylinderGeometry(0.2, 0.28, 1.1, 8), toon(0x6b4a2e), trunks, 1.08);
+  inst(new THREE.ConeGeometry(0.9, 1.4, 9), toon(0x2b6e47), c1, 1.05);
+  inst(new THREE.ConeGeometry(0.7, 1.15, 9), toon(0x358457), c2, 1.06);
+  inst(new THREE.ConeGeometry(0.46, 0.9, 9), toon(0x47a168), c3, 1.07);
+  inst(new THREE.SphereGeometry(0.55, 12, 10), toon(0x3f8f4f), bushes, 1.06);
+  inst(new THREE.BoxGeometry(1.3, 1.3, 1.3), toon(0xffffff, { map: makeTex('crate') }), crates, 1.04);
+
+  G.ghosts = G.ghosts.map((sp, k) => { const o = buildGhost(); world.add(o.g); const gh = { o, sx: sp.sx, sz: sp.sz, x: sp.sx, z: sp.sz, delay: 3 + k * 2, active: false }; o.g.visible = false; o.g.position.set(gh.x, 0.7, gh.z); return gh; });
+
+  if (st.theme === 'wald') for (let k = 0; k < 28; k++) { const f = glow(0xd8ff7a, 0.45, 0.9); const fx = R() * cols * 2, fz = R() * rows * 2; f.userData = { x: fx, z: fz, y: 0.6 + R() * 2.2, p: R() * 6 }; world.add(f); G.flies.push(f); }
+}
+
+function addPiece(name, x, z) {
+  if (!name || G.have.has(name)) return;
+  const g = new THREE.Group(); g.position.set(x, 0, z); world.add(g);
+  const model = pieceModel(name); model.position.y = 1.05; g.add(model);
+  const gl = glow(0xffd36b, 2.8, 0.7); gl.position.y = 1.05; g.add(gl);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.85, 32), basic(0xffd36b, { transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.04; g.add(ring);
+  G.items.push({ name, g, model, x, z, c: Math.round(x / 2), r: Math.round(z / 2), taken: false });
+}
+function addHeart(x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); world.add(g);
+  const h = heartMesh(0.75, M.red, 1.08); h.position.y = 0.95; g.add(h);
+  const gl = glow(0xff6f8e, 2.0, 0.6); gl.position.y = 0.95; g.add(gl);
+  G.heartItems.push({ g, h, x, z, taken: false });
+}
+
+/* ================== Anzeigen ================== */
+const HEART_SVG = '<svg viewBox="0 0 24 24"><path fill="#e8435a" stroke="#2b1020" stroke-width="1.5" d="M12 21s-8-5.2-8-11a4.5 4.5 0 018-2.8A4.5 4.5 0 0120 10c0 5.8-8 11-8 11z"/></svg>';
+const HEART_EMPTY = '<svg viewBox="0 0 24 24"><path fill="none" stroke="rgba(244,230,198,.4)" stroke-width="1.8" d="M12 21s-8-5.2-8-11a4.5 4.5 0 018-2.8A4.5 4.5 0 0120 10c0 5.8-8 11-8 11z"/></svg>';
+$('slots').innerHTML = ORDER.map(k => `<div class="slot" id="slot-${k}" title="${PIECES[k].label}"><svg viewBox="0 0 24 24"><path fill="currentColor" d="${PIECES[k].icon}"/></svg></div>`).join('');
+function hud() {
+  $('hearts').innerHTML = G.hearts > 0 ? HEART_SVG.repeat(G.hearts) : HEART_EMPTY;
+  $('points').innerHTML = `<b>${G.points}</b> Punkte`;
+  $('armorCount').textContent = `${G.have.size} von 8`;
+  ORDER.forEach(k => $('slot-' + k).classList.toggle('got', G.have.has(k)));
+  $('stagePill').textContent = `Stufe ${G.stage + 1} · ${STAGES[G.stage].name}`;
+}
+let toastTimer = 0;
+function toast(text, ms = 2200) { const t = $('toast'); t.textContent = text; t.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), ms); }
+let cardTimer = 0;
+function showCard() {
+  const st = STAGES[G.stage]; $('cardNum').textContent = `Stufe ${G.stage + 1} von 4`; $('cardName').textContent = st.name; $('cardHint').textContent = st.hint;
+  $('card').classList.add('on'); clearTimeout(cardTimer); cardTimer = setTimeout(() => $('card').classList.remove('on'), 3600);
+}
+function flash() { const f = $('flash'); f.style.transition = 'none'; f.style.opacity = 0.75; requestAnimationFrame(() => { f.style.transition = ''; f.style.opacity = 0; }); }
+
+/* ================== Steuerung ================== */
+const keys = {};
+const KEYMAP = { ArrowUp: 'u', ArrowDown: 'd', ArrowLeft: 'l', ArrowRight: 'r', w: 'u', s: 'd', a: 'l', d: 'r', W: 'u', S: 'd', A: 'l', D: 'r' };
+addEventListener('keydown', e => { const k = KEYMAP[e.key]; if (k) { keys[k] = true; e.preventDefault(); } if (e.key === 'Enter' && G.state === 'title') begin(); });
+addEventListener('keyup', e => { const k = KEYMAP[e.key]; if (k) keys[k] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+let joy = null;
+const joyBase = $('joyBase'), joyKnob = $('joyKnob');
+canvas.addEventListener('pointerdown', e => {
+  if (joy) return; joy = { id: e.pointerId, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0 };
+  try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+  joyBase.style.left = e.clientX + 'px'; joyBase.style.top = e.clientY + 'px'; joyKnob.style.transform = ''; joyBase.hidden = false;
+});
+canvas.addEventListener('pointermove', e => {
+  if (!joy || e.pointerId !== joy.id) return; let dx = e.clientX - joy.x0, dy = e.clientY - joy.y0; const l = Math.hypot(dx, dy); if (l > 60) { dx *= 60 / l; dy *= 60 / l; }
+  joy.dx = dx / 60; joy.dy = dy / 60; joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+});
+const endJoy = e => { if (joy && e.pointerId === joy.id) { joy = null; joyBase.hidden = true; } };
+canvas.addEventListener('pointerup', endJoy); canvas.addEventListener('pointercancel', endJoy);
+
+$('sound').addEventListener('click', e => { soundOn = !soundOn; e.currentTarget.textContent = soundOn ? '🔊' : '🔇'; });
+$('go').addEventListener('click', begin);
+$('again').addEventListener('click', restart);
+function begin() {
+  try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); AC.resume(); } catch (_) {}
+  $('title').hidden = true; G.state = 'play'; showCard(); sfx.open();
+}
+
+/* ================== Ablauf ================== */
+function placeAtStart() {
+  knight.root.position.set(G.start.x, 0, G.start.z); G.yaw = Math.PI; knight.root.rotation.y = Math.PI;
+  fairy.position.set(G.start.x + 0.8, 1.7, G.start.z - 0.8);
+}
+function respawnGhost(gh, delay) { gh.x = gh.sx; gh.z = gh.sz; gh.delay = delay; gh.active = false; gh.o.g.visible = false; gh.o.g.position.set(gh.x, 0.7, gh.z); }
+function loadStage(i) {
+  G.stage = i; buildStage(i); placeAtStart(); G.invuln = 0; hud(); snapCamera(); $('vignette').style.opacity = 0;
+}
+function setPart(name, on) { knight.parts[name].forEach(m => m.visible = on); if (name === 'helm') knight.hairCap.visible = !on; }
+
+function collectPiece(it) {
+  it.taken = true; world.remove(it.g); G.have.add(it.name); G.points += 100; setPart(it.name, true); sfx.piece();
+  const P = knight.root.position; burst(P.x, 1.2, P.z, 0xffd36b, 26, 3.5);
+  toast(`Du hast ${PIECES[it.name].acc} gefunden! +100`);
+  const slot = $('slot-' + it.name); slot.classList.remove('pop'); void slot.offsetWidth; slot.classList.add('pop');
+  hud();
+  const st = STAGES[G.stage];
+  if (st.pieces.every(p => G.have.has(p)) && G.exit.locked) {
+    G.exit.locked = false; setTimeout(() => { sfx.open(); toast(G.stage === 3 ? 'Der Thron wartet auf dich! Die Fee zeigt dir den Weg.' : 'Der Weg ist frei! Folge der Fee.', 2800); }, 900);
+  }
+}
+function collectHeart(h) {
+  h.taken = true; world.remove(h.g); G.hearts = Math.min(5, G.hearts + 1); G.points += 20; sfx.heart();
+  burst(h.x, 1, h.z, 0xff6f8e, 18, 3); toast('Ein Herz! Es beschützt dich einmal. +20'); hud();
+}
+function caught(gh) {
+  if (G.invuln > 0 || G.state !== 'play') return;
+  if (G.hearts > 0) {
+    G.hearts--; G.invuln = 2; sfx.shield(); burst(gh.x, 1, gh.z, 0xc4b0ff, 22, 4); respawnGhost(gh, 2.5);
+    toast('Puh! Ein Herz hat dich beschützt.'); hud(); return;
+  }
+  G.state = 'caught'; sfx.lost(); flash(); toast('Huuuh! Erwischt! Zurück zum Anfang.', 2000);
+  $('fade').style.opacity = 0.8;
+  setTimeout(() => { placeAtStart(); G.ghosts.forEach((g, k) => respawnGhost(g, 2.5 + k * 1.5)); snapCamera(); G.invuln = 1; $('fade').style.opacity = 0; G.state = 'play'; }, 1100);
+}
+function nextStage() {
+  G.state = 'transition'; G.points += 50; sfx.fanfare(); $('fade').style.opacity = 1;
+  setTimeout(() => { loadStage(G.stage + 1); $('fade').style.opacity = 0; G.state = 'play'; showCard(); }, 750);
+}
+function startEnd() {
+  G.state = 'end'; G.endT = 0; $('vignette').style.opacity = 0; G.points += 50 + G.hearts * 25; hud();
+  const E = G.exit; knight.root.position.set(E.x, 0, E.z + 1.3); G.yaw = 0;
+  knight.crown.visible = true; knight.crown.position.y = 2.4;
+  G.ghosts.forEach((gh, k) => { gh.active = true; gh.o.g.visible = true; gh.x = E.x + (k ? 2.6 : -2.6); gh.z = E.z + 2.6; gh.o.cheeks.visible = true; gh.o.mouth.scale.set(1.2, 0.45, 0.5); });
+  sfx.fanfare(); setTimeout(() => sfx.piece(), 1500);
+  const cols = [0xff6fae, 0xffcc33, 0x7fe0ff, 0xb07cff, 0x9cff8a];
+  for (let k = 0; k < 90; k++) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.14, 0.09), basic(cols[k % 5], { side: THREE.DoubleSide }));
+    m.position.set(E.x + (Math.random() - .5) * 8, 3 + Math.random() * 6, E.z + 1.3 + (Math.random() - .5) * 6); m.userData = { v: 1.2 + Math.random() * 1.5, s: Math.random() * 6 };
+    world.add(m); G.confetti.push(m);
+  }
+  for (let k = 0; k < 10; k++) { const h = heartMesh(0.25, toon(0xff6f8e, { transparent: true })); h.userData = { t: k * 0.35, gi: k % Math.max(1, G.ghosts.length) }; h.visible = false; world.add(h); G.endHearts.push(h); }
+  setTimeout(() => { $('endScore').textContent = `${G.points} Punkte`; $('end').hidden = false; }, 3800);
+}
+function restart() {
+  $('end').hidden = true; G.have.clear(); G.hearts = 1; G.points = 0; G.confetti = []; G.endHearts = [];
+  ORDER.forEach(k => setPart(k, false)); knight.crown.visible = false;
+  loadStage(0); G.state = 'play'; showCard();
+}
+
+/* ---------- Weg der Fee ---------- */
+const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+function findPath() {
+  const W = G.cols, H = G.rows, P = knight.root.position;
+  const sc = Math.round(P.x / 2), sr = Math.round(P.z / 2);
+  const targets = new Set();
+  G.items.forEach(it => { if (!it.taken) targets.add(it.r * W + it.c); });
+  if (!targets.size && !G.exit.locked) targets.add(G.exit.r * W + G.exit.c);
+  if (!targets.size) return null;
+  const prev = new Int32Array(W * H).fill(-1), seen = new Uint8Array(W * H); const start = sr * W + sc; const q = [start]; seen[start] = 1; let found = -1;
+  for (let h = 0; h < q.length; h++) {
+    const k = q[h]; if (targets.has(k)) { found = k; break; }
+    const c = k % W, r = (k / W) | 0;
+    for (const [dc, dr] of DIRS) { const nc = c + dc, nr = r + dr; if (nc < 0 || nr < 0 || nc >= W || nr >= H) continue; const nk = nr * W + nc; if (seen[nk] || solid(nc, nr)) continue; seen[nk] = 1; prev[nk] = k; q.push(nk); }
+  }
+  if (found < 0) return null; const path = []; for (let k = found; k !== -1; k = prev[k]) path.push(k); return path.reverse();
+}
+
+/* ================== Jedes Bild ================== */
+const camLook = new THREE.Vector3();
+function camOffset() { const m = camera.aspect < 0.8 ? 1.5 : camera.aspect < 1.2 ? 1.2 : 1; return new THREE.Vector3(0, 13.5 * m, 6.8 * m); }
+function snapCamera() { const P = knight.root.position; camera.position.copy(P).add(camOffset()); camLook.set(P.x, 0.8, P.z - 0.4); camera.lookAt(camLook); }
+
+function updatePlay(dt) {
+  const P = knight.root.position;
+  let ix = (keys.r ? 1 : 0) - (keys.l ? 1 : 0), iz = (keys.d ? 1 : 0) - (keys.u ? 1 : 0);
+  if (joy) { ix += joy.dx; iz += joy.dy; }
+  let len = Math.hypot(ix, iz); if (len < 0.15) len = 0; else if (len > 1) { ix /= len; iz /= len; len = 1; }
+  if (len > 0) {
+    const sp = 5.2, nx = P.x + ix * sp * dt, nz = P.z + iz * sp * dt;
+    if (!blocked(nx, P.z)) P.x = nx; else if (Math.abs(iz) < 0.4) { const cz = Math.round(P.z / 2) * 2; if (!blocked(nx, cz)) P.z += Math.sign(cz - P.z) * Math.min(Math.abs(cz - P.z), sp * dt); }
+    if (!blocked(P.x, nz)) P.z = nz; else if (Math.abs(ix) < 0.4) { const cx = Math.round(P.x / 2) * 2; if (!blocked(cx, nz)) P.x += Math.sign(cx - P.x) * Math.min(Math.abs(cx - P.x), sp * dt); }
+    G.yaw = Math.atan2(ix, iz);
+  }
+  G.move += (len - G.move) * Math.min(1, dt * 10);
+  if (G.invuln > 0) G.invuln -= dt;
+
+  // Rüstungsteile & Herzen
+  for (const it of G.items) if (!it.taken && Math.hypot(it.x - P.x, it.z - P.z) < 1.0) collectPiece(it);
+  for (const h of G.heartItems) if (!h.taken && Math.hypot(h.x - P.x, h.z - P.z) < 1.0) collectHeart(h);
+
+  // Ausgang
+  const E = G.exit, dE = Math.hypot(E.x - P.x, E.z - P.z);
+  if (E.locked) { G.lockToastT -= dt; if (dE < 2.4 && G.lockToastT <= 0) { toast('Erst alle Rüstungsteile dieser Stufe finden!'); G.lockToastT = 4; } }
+  else if (dE < (E.kind === 'gate' ? 1.0 : 0.95)) { if (G.stage < 3) nextStage(); else startEnd(); return; }
+
+  // Gespenster
+  let near = 99;
+  const spd = STAGES[G.stage].ghostSpeed;
+  for (const gh of G.ghosts) {
+    if (!gh.active) { gh.delay -= dt; if (gh.delay <= 0) { gh.active = true; gh.o.g.visible = true; burst(gh.x, 1, gh.z, 0xc4b0ff, 20, 3); sfx.boo(); } continue; }
+    const dx = P.x - gh.x, dz = P.z - gh.z, d = Math.hypot(dx, dz) || 1;
+    const wob = Math.sin(G.t * 1.7 + gh.sx) * 0.35;
+    gh.x += (dx / d - dz / d * wob) * spd * dt; gh.z += (dz / d + dx / d * wob) * spd * dt;
+    gh.o.g.rotation.y = Math.atan2(dx, dz);
+    near = Math.min(near, d);
+    if (d < 0.95) caught(gh);
+  }
+  $('vignette').style.opacity = Math.max(0, Math.min(1, (7 - near) / 5)).toFixed(2);
+  G.booT -= dt; if (near < 6 && G.booT <= 0) { sfx.boo(); G.booT = 4 + Math.random() * 3; }
+}
+
+function updateWorld(dt) {
+  const t = G.t, P = knight.root.position;
+  // Ritterin
+  let d = G.yaw - knight.root.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); knight.root.rotation.y += d * Math.min(1, dt * 12);
+  G.phase += dt * 9 * G.move;
+  const s = Math.sin(G.phase) * 0.7 * G.move;
+  knight.legs[0].rotation.x = s; knight.legs[1].rotation.x = -s;
+  knight.arms[0].rotation.x = -s * 0.8; knight.arms[1].rotation.x = s * 0.8;
+  knight.body.position.y = Math.abs(Math.sin(G.phase)) * 0.07 * G.move + (G.move < 0.1 ? Math.sin(t * 2) * 0.015 : 0);
+  knight.capeG.rotation.x = 0.12 + G.move * 0.4 + Math.sin(t * 4) * 0.05;
+  knight.root.visible = G.invuln > 0 && G.state === 'play' ? Math.sin(t * 30) > -0.3 : true;
+  marker.position.set(P.x, 0.05, P.z); blob.position.set(P.x, 0.02, P.z);
+
+  // Gespenster
+  for (const gh of G.ghosts) {
+    gh.o.g.position.set(gh.x, 0.75 + Math.sin(t * 2.5 + gh.sx) * 0.15, gh.z);
+    gh.o.tails.forEach((tl, k) => { tl.rotation.z = Math.sin(t * 6 + k) * 0.35; });
+    gh.o.arms.forEach((a, k) => { a.position.y = 0.05 + Math.sin(t * 5 + k * 3) * 0.12; });
+    gh.o.inner.rotation.z = Math.sin(t * 1.8 + gh.sz) * 0.08;
+  }
+
+  // Gegenstände
+  for (const it of G.items) { if (it.taken) continue; it.model.rotation.y = t * 1.6; it.model.position.y = 1.05 + Math.sin(t * 2.4 + it.x) * 0.15; }
+  for (const h of G.heartItems) { if (h.taken) continue; h.h.rotation.y = t * 2; h.h.position.y = 0.95 + Math.sin(t * 3 + h.x) * 0.12; }
+
+  // Ausgang
+  const E = G.exit;
+  if (E) { if (!E.locked) { E.open = Math.min(1, E.open + dt * 0.8); E.beam.material.opacity = 0.18 + Math.sin(t * 3) * 0.06; } E.apply(E.open); }
+
+  // Fackeln & Licht
+  for (const f of G.flames) { const k = 1 + Math.sin(t * 13 + f.userData.seed) * 0.12 + Math.sin(t * 29 + f.userData.seed * 2) * 0.06; f.scale.set(1, k, 1); }
+  G.lightT -= dt;
+  if (G.lightT <= 0) { G.lightT = 0.25; const sorted = G.torches.slice().sort((a, b) => a.distanceToSquared(P) - b.distanceToSquared(P)); torchLights.forEach((l, k) => { if (sorted[k]) { l.position.copy(sorted[k]); l.visible = true; } else l.visible = false; }); }
+  torchLights.forEach((l, k) => { l.intensity = 1.5 + Math.sin(t * 11 + k * 2) * 0.15; });
+
+  // Glühwürmchen
+  for (const f of G.flies) { const u = f.userData; f.position.set(u.x + Math.sin(t * 0.7 + u.p) * 0.8, u.y + Math.sin(t * 1.3 + u.p) * 0.3, u.z + Math.cos(t * 0.6 + u.p) * 0.8); f.material.opacity = 0.5 + Math.sin(t * 3 + u.p) * 0.4; }
+
+  // Fee
+  G.pathT -= dt;
+  if (G.pathT <= 0 && G.state !== 'end') { G.pathT = 0.3; G.path = findPath(); }
+  let fx = P.x + 0.9, fz = P.z - 0.9;
+  if (G.path && G.path.length > 1 && G.state !== 'end') {
+    const k = G.path[Math.min(2, G.path.length - 1)], tx = (k % G.cols) * 2, tz = ((k / G.cols) | 0) * 2;
+    let vx = tx - P.x, vz = tz - P.z; const l = Math.hypot(vx, vz) || 1; const m = Math.min(l, 2.0); fx = P.x + vx / l * m; fz = P.z + vz / l * m;
+    G.trailT -= dt;
+    if (G.trailT <= 0) { G.trailT = 0.08; const lim = Math.min(12, G.path.length - 1); G.trailK = G.trailK >= lim ? 1 : G.trailK + 1; const q = G.path[G.trailK]; spark((q % G.cols) * 2 + (Math.random() - .5) * 0.3, 0.25, ((q / G.cols) | 0) * 2 + (Math.random() - .5) * 0.3, 0xffb8ee, 0, 0.35, 0, 1.1, 0.55); }
+  }
+  if (G.state === 'end') { fx = P.x + Math.cos(t * 1.5) * 1.3; fz = P.z + Math.sin(t * 1.5) * 1.3; }
+  _p.set(fx, 1.75 + Math.sin(t * 3.2) * 0.15, fz); fairy.position.lerp(_p, Math.min(1, dt * 3));
+  wings.forEach((w, k) => { w.rotation.y = (k ? -1 : 1) * (0.3 + Math.sin(t * 32) * 0.6); });
+  if (Math.random() < dt * 14) spark(fairy.position.x, fairy.position.y - 0.05, fairy.position.z, 0xfff0a8, (Math.random() - .5) * 0.4, -0.4, (Math.random() - .5) * 0.4, 0.6, 0.3);
+
+  // Glitzer
+  for (const p of sparks) {
+    if (p.life <= 0) continue; p.life -= dt; if (p.life <= 0) { p.s.visible = false; continue; }
+    p.s.position.x += p.vx * dt; p.s.position.y += p.vy * dt; p.s.position.z += p.vz * dt; p.vx *= 0.96; p.vz *= 0.96; p.vy -= dt * 1.5 * (p.vy > 0 ? 0.5 : 0);
+    const a = p.life / p.max; p.s.material.opacity = Math.min(1, a * 1.6); p.s.scale.setScalar(p.size * (0.6 + a * 0.6));
+  }
+
+  // Schluss
+  if (G.state === 'end') {
+    G.endT += dt;
+    knight.crown.position.y += (0.42 - knight.crown.position.y) * Math.min(1, dt * 2.5);
+    knight.crown.rotation.y = Math.max(0, 1 - G.endT * 0.5) * t * 4;
+    if (G.endT > 1.1 && G.endT < 1.2) burst(P.x, 2.2, P.z, 0xffd36b, 30, 4);
+    knight.arms[1].rotation.x = -2.6 + Math.sin(t * 3) * 0.2; knight.arms[0].rotation.x = -0.4;
+    for (const m of G.confetti) { m.position.y -= m.userData.v * dt; m.rotation.x += dt * 4; m.rotation.y += dt * 3; m.position.x += Math.sin(t * 2 + m.userData.s) * dt * 0.5; if (m.position.y < 0.05) m.position.y = 7; }
+    for (const gh of G.ghosts) { const dx = P.x - gh.x, dz = P.z - gh.z; gh.o.g.rotation.y = Math.atan2(dx, dz); }
+    for (const h of G.endHearts) {
+      const u = h.userData, gh = G.ghosts[u.gi]; if (!gh) continue; const age = (G.endT - u.t) % 3.5; if (age < 0) continue;
+      h.visible = true; h.position.set(gh.x + Math.sin(age * 3 + u.t) * 0.3, 1.8 + age * 0.9, gh.z); h.material.opacity = Math.max(0, 1 - age / 3.5); h.rotation.y = age * 2;
+    }
+  }
+
+  // Kamera
+  const off = camOffset();
+  const want = G.state === 'end' ? _s.set(P.x, 6.5, P.z + 6.2) : _s.copy(P).add(off);
+  camera.position.lerp(want, 1 - Math.pow(0.02, dt));
+  _p.set(P.x, G.state === 'end' ? 1.3 : 0.8, P.z - (G.state === 'end' ? 0 : 0.4));
+  camLook.lerp(_p, 1 - Math.pow(0.01, dt)); camera.lookAt(camLook);
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; G.t += dt;
+  if (G.state === 'play') updatePlay(dt);
+  else if (G.state !== 'end') G.move += (0 - G.move) * Math.min(1, dt * 10);
+  updateWorld(dt);
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+loadStage(0); hud();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
