@@ -17,18 +17,19 @@ Die Startseite `index.html` zeigt alle vier Spiele. Ein Klick auf „Spielen“ 
 
 - Steuerung: am Computer mit Maus oder Pfeiltasten, auf dem Tablet mit dem Finger.
 - Die ersten drei Spiele brauchen Internet, weil sie die 3D-Bibliothek three.js und die Schriften aus dem Netz laden.
-- Das Schachspiel bringt alles selbst mit (keine Werbung, keine Anmeldung, es werden keine Daten verschickt). Gewonnene Geschenke merkt sich nur das eigene Gerät.
+- Das Schachspiel bringt alles selbst mit – auch three.js und die Schriften (keine Werbung, keine Anmeldung, es werden keine Daten verschickt). Gewonnene Geschenke merkt sich nur das eigene Gerät.
 
 ## Einhörner gegen Dinos (Schach)
 
+- **Echtes 3D-Brett:** Die Figuren haben die bekannte Schachform (Krone mit Kreuz, Krönchen, Zinnen, spitzer Hut, Pferdekopf, Kugelkopf) und dazu ein Einhorn- oder Dino-Gesicht.
 - **Gegen den Computer** in vier Stufen. Je schwerer, desto mehr Geschenke gibt es für einen Sieg.
 - **Zu zweit** an einem Gerät – nebeneinander oder gegenüber (dann dreht sich das Brett zu dem, der dran ist).
-- **Elo, der Schach-Elefant,** zeigt, wohin eine Figur ziehen kann, warnt vor Fehlern, gibt Tipps und liest alles vor.
-- **Schach-Schule** mit zehn Lektionen: alle Figuren, Schach abwehren, Schachmatt in einem Zug.
+- **Elo, der Schach-Elefant,** zeigt, wohin eine Figur ziehen kann, warnt vor Fehlern, gibt Tipps und liest alles vor. Er benutzt kein Schachwort, das er nicht vorher erklärt hat.
+- **Schach-Schule** mit elf Lektionen: alle Figuren, Schach abwehren, der „Zaubertrick“ (Rochade), Schachmatt in einem Zug.
 - **Schatzkiste** mit 40 Geschenken: neue Bretter, Farben, Hüte und Sammelkarten.
-- In den Einstellungen kann man das Vorlesen, die Töne und das 3D-Brett ausschalten.
+- In den Einstellungen kann man das Vorlesen, die Töne und das 3D-Brett ausschalten. Kann ein Gerät kein 3D, zeichnet das Spiel das Brett von selbst flach.
 
-Der Ordner `schach/` enthält nur zwei Dateien: `index.html` (das ganze Spiel) und `stimme-….mp3` (Elos Stimme).
+Der Ordner `schach/` enthält drei Dateien, die zusammengehören: `index.html` (das Spiel), `brett3d-….js` (das 3D-Brett) und `stimme-….mp3` (Elos Stimme).
 
 ## Als Webseite einschalten (GitHub Pages)
 
@@ -64,6 +65,6 @@ Programmiert mit Claude, einer KI von Anthropic.
 
 Verwendet werden:
 
-- [three.js](https://threejs.org) (MIT-Lizenz) und Schriften von Google Fonts in den ersten drei Spielen.
+- [three.js](https://threejs.org) (MIT-Lizenz) in allen vier Spielen; in den ersten drei Spielen außerdem Schriften von Google Fonts.
 - Im Schachspiel die Schriften [DynaPuff](https://fonts.google.com/specimen/DynaPuff) und [Andika](https://fonts.google.com/specimen/Andika) (beide SIL Open Font License).
 - Elos Stimme ist die freie deutsche Stimme „Thorsten“ von Thorsten Müller ([Thorsten-Voice](https://www.thorsten-voice.de), CC0), erzeugt mit dem Programm [Piper](https://github.com/OHF-Voice/piper1-gpl).

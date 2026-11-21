@@ -412,6 +412,25 @@ svg.art{display:block;width:100%;height:100%;overflow:visible}
   .st svg.art,.eye,.held .fig,.held .fee,.coach .fee svg,.himmel i,.strahlen,.app::before,.unterlicht,.glanz::after,.slab-front i,.pkt{animation:none!important}
 }
 
+/* ---------- Wegweiser für Anfänger ---------- */
+.hinweis{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;background:#e7fff2;border:3px solid var(--ink);font-weight:700}
+.hinweis span{flex:1 1 220px}
+.tile.start{position:relative}
+.tile.start::after{content:"Fang hier an!";position:absolute;right:-6px;top:-12px;padding:.35em .7em;border-radius:99px;background:var(--sun);color:var(--ink);border:3px solid var(--ink);font:700 .82rem/1 var(--fd);transform:rotate(5deg);animation:hupf .6s ease-in-out infinite alternate}
+
+/* ---------- Das Brett in echtem 3D ---------- */
+.stage.drei .leinwand{position:absolute;left:0;top:0;width:100%;height:100%;display:block;touch-action:none;outline:0}
+.schild{position:absolute;transform:translate(-50%,-100%);padding:.32em .75em;border-radius:99px;background:var(--paper);border:3px solid var(--ink);box-shadow:0 3px 0 var(--ink);font:700 clamp(.85rem,2.3vmin,1.15rem)/1 var(--fd);color:var(--ink);white-space:nowrap;pointer-events:none;animation:neu .2s ease-out}
+.bild3{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;-webkit-user-drag:none;user-select:none;filter:drop-shadow(0 2px 0 rgba(44,27,71,.3)) drop-shadow(0 0 1.5px rgba(44,27,71,.8))}
+.strip .kopf.k3 .bild3{position:absolute;left:-6%;top:-2%;width:112%;height:112%;object-fit:contain}
+.strip .beute .klein{display:inline-block;width:24px;height:24px;margin-right:-8px}
+.strip .beute .klein svg{width:24px;height:24px;margin:0}
+.nurquiz .leinwand{visibility:hidden}
+.figur .paar span{display:block;width:60px;height:66px;margin-right:-6px;flex:none}
+.figur .paar:has(.bild3){width:124px;background:linear-gradient(#d9ccff,#b8a5f2);border-radius:12px;border:2.5px solid var(--ink);padding:2px 6px 0 2px;margin-right:4px}
+.strip .kopf.k3{background:linear-gradient(#e6dcff,#b8a5f2)}
+.held .fig .bild3{filter:drop-shadow(0 10px 14px rgba(8,3,26,.55))}
+
 </style>
 </head>
 <body>
@@ -425,6 +444,7 @@ svg.art{display:block;width:100%;height:100%;overflow:visible}
   <section class="screen game" id="scr-lektion" aria-label="Lektion"></section>
   <noscript><p style="padding:2em;font-size:1.3em">Für dieses Spiel muss JavaScript eingeschaltet sein.</p></noscript>
 </main>
+<script src="brett3d-f4cfdfd5.js"></script>
 <script id="engine-src">
 /* =========================================================
    Schach-Maschine: Regeln, Zugliste, Computer-Gegner, Tipps.
@@ -1660,25 +1680,6 @@ CARDS.forEach(c => GIFTS.push({ id: 'k:' + c.id, kind: 'k', ref: c.id, n: c.n, w
 /* Die ersten Geschenke sind immer gleich – damit man sofort etwas sieht. */
 const FIRST = ['h:party', 'b:blumen', 'd:rot', 'k:koenig', 'u:rosa', 'h:zauber'];
 
-/* ---------- Schach-Tipps von Elo ---------- */
-const TIPS = [
-  'Stell deine Figuren in die Mitte. Dort können sie am meisten!',
-  'Springer am Rand bringt Kummer und Schand!',
-  'Hol erst Springer und Läufer raus. Die Dame kommt später.',
-  'Mach früh die Rochade. Dann ist dein König sicher.',
-  'Schau vor jedem Zug: Was will der Gegner?',
-  'Pass auf deine Dame auf! Sie ist 9 Punkte wert.',
-  'Ein Turm ist mehr wert als ein Läufer oder ein Springer.',
-  'Bauern können nie zurück. Überleg gut, bevor du sie ziehst!',
-  'Ein Bauer, der ganz hinten ankommt, wird zur Dame!',
-  'Türme mögen freie Wege. Stell sie dahin, wo keine Bauern stehen.',
-  'Lass keine Figur allein stehen. Freunde beschützen sich!',
-  'Hast du mehr Figuren? Dann ist Tauschen gut für dich.',
-  'Zieh am Anfang nicht zweimal mit der gleichen Figur.',
-  'Schach sagen ist toll. Aber nur, wenn es dir auch hilft!',
-  'Zwei Türme nebeneinander sind richtig stark.'
-];
-
 /* ---------- Schach-Schule ---------- */
 /* Stern-Aufgaben: h = Held (Figur + Feld), s = Sterne, x = Hindernisse (eigene Figuren), f = Gegner zum Schnappen */
 const LESSONS = [
@@ -1733,6 +1734,12 @@ const LESSONS = [
       { fen: '6k1/8/8/8/8/8/5PPP/3Qr1K1 w - - 0 1', goal: 'raus', say: 'Schnappen: Schnapp die Figur, die Schach gibt!' },
       { fen: 'R3r1k1/8/8/8/8/8/3B4/4K3 w - - 0 1', goal: 'raus', say: 'Jetzt gehen alle drei Wege. Such dir einen aus!' }
     ] },
+  { id: 'rochade', n: 'Der Zaubertrick', art: ['u', 'k'], intro: 'Jetzt lernst du einen Zaubertrick für den König. Er heißt Rochade!',
+    tasks: [
+      { fen: '4k3/8/8/8/8/8/5PPP/4K2R w K - 0 1', goal: 'rochade', demo: true, say: 'Jetzt du! Tippe auf den König. Dann tippe zwei Felder daneben, auf den grünen Punkt.' },
+      { fen: '4k3/8/8/8/8/8/PPP5/R3K3 w Q - 0 1', goal: 'rochade', demo: true, say: 'Der Trick geht auch zur anderen Seite. Probier es!' },
+      { fen: 'r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4', goal: 'rochade', say: 'Jetzt im echten Spiel: Versteck deinen König mit dem Zaubertrick! Er geht nur, wenn König und Turm noch nie gezogen haben und nichts dazwischen steht.' }
+    ] },
   { id: 'matt1', n: 'Matt-Rätsel 1', art: ['u', 'q'], intro: 'Schachmatt heißt: Der König steht im Schach und kann sich nicht retten. Setz die Dinos mit einem Zug matt!',
     tasks: [
       { fen: '6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1', goal: 'matt', say: 'Der Dino-König ist hinter seinen Bauern eingesperrt. Wer kann ihn angreifen?' },
@@ -1750,7 +1757,7 @@ const LESSONS = [
     ] }
 ];
 
-return { PIECE: PIECE, KIND: KIND, TEAM: TEAM, LEVELS: LEVELS, BOARDS: BOARDS, SKINS: SKINS, HATS: HATS, CARDS: CARDS, GIFTS: GIFTS, FIRST: FIRST, TIPS: TIPS, LESSONS: LESSONS };
+return { PIECE: PIECE, KIND: KIND, TEAM: TEAM, LEVELS: LEVELS, BOARDS: BOARDS, SKINS: SKINS, HATS: HATS, CARDS: CARDS, GIFTS: GIFTS, FIRST: FIRST, LESSONS: LESSONS };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = Data;
 
@@ -1774,15 +1781,26 @@ const T = {
   },
   turn(two, team) { return two ? TEAM[team].die + ' sind dran.' : 'Du bist dran!'; },
   botCheck: '<b>Schach!</b> Jetzt muss sich der König vom Computer retten.',
-  check(two, team, helpful) {
-    return '<b>Schach!</b> ' + (two ? 'Der König ' + TEAM[team].der : 'Dein König') + ' ist in Gefahr. ' + (helpful ? 'Die grün leuchtenden Figuren können helfen: schnappen, schützen oder schleichen!' : 'Rette ihn!');
+  /* first: Das Kind hört das Wort zum ersten Mal – dann wird es erklärt. dreiS: Die Lektion „Die drei S“ ist geschafft. */
+  check(two, team, helpful, first, dreiS) {
+    const wer = two ? 'Der König ' + TEAM[team].der : 'Dein König';
+    const a = first ? '<b>Schach!</b> Das heißt: ' + wer + ' wird angegriffen. Er muss sofort gerettet werden!' : '<b>Schach!</b> ' + wer + ' ist in Gefahr.';
+    const b = !helpful ? (first ? '' : ' Rette ihn!') : dreiS ? ' Die grün leuchtenden Figuren können helfen: schnappen, schützen oder schleichen!' : ' Die grün leuchtenden Figuren können ihn retten.';
+    return a + b;
   },
-  mateChance(two, team) { return 'Aufgepasst! ' + (two ? TEAM[team].die + ' können' : 'Du kannst') + ' jetzt <b>Schachmatt</b> setzen. ' + (two ? 'Wer findet den Zug?' : 'Findest du den Zug?'); },
+  mateChance(two, team, first) {
+    const wer = two ? TEAM[team].die + ' können' : 'Du kannst';
+    if (first) return 'Aufgepasst! ' + wer + ' jetzt gewinnen! Greif den König so an, dass er sich nicht mehr retten kann. Das heißt <b>Schachmatt</b>.';
+    return 'Aufgepasst! ' + wer + ' jetzt <b>Schachmatt</b> setzen. ' + (two ? 'Wer findet den Zug?' : 'Findest du den Zug?');
+  },
   threat(type, two, team, again) {
     return 'Achtung' + (two ? ', ' + TEAM[team].n : '') + '! <b>' + my(type, two) + '</b> wird angegriffen.' + (again ? '' : ' Bring ' + P[type].ihn + ' in Sicherheit – oder beschütze ' + P[type].ihn + '!');
   },
   freeCap(two) { return 'Schau genau hin! ' + (two ? 'Ihr könnt' : 'Du kannst') + ' etwas schnappen.'; },
-  tip(i) { return '<b>Tipp:</b> ' + D.TIPS[i % D.TIPS.length]; },
+  /* Elos Ideen: immer etwas, das man auf dem Brett sehen kann – nie ein Wort, das noch nicht erklärt wurde */
+  ideaMitte: 'Ein guter Anfang: ein Bauer in die Mitte! Das macht Platz für die Figuren dahinter.',
+  ideaRaus: 'Die Springer und Läufer hinten wollen auch mitspielen! Hol einen nach vorn.',
+  ideaZiel: 'Dieser Bauer ist fast am Ziel! Ganz hinten wird er zur Dame.',
   info(type) { return 'Das ist ' + P[type].ein + '. ' + P[type].how; },
   legend: '<b>Rotes Achtung-Zeichen:</b> Vorsicht, dort wirst du geschnappt!',
   stuck(check) { return 'Diese Figur kann gerade nicht ziehen. ' + (check ? 'Erst muss der König gerettet werden!' : 'Nimm eine andere!'); },
@@ -1796,23 +1814,30 @@ const T = {
     return TEAM[who].die + ' haben jetzt ' + neu + '!';
   },
   ep(who) {
-    if (who === 'ich') return 'Im Vorbeigehen geschnappt! Das ist ein ganz besonderer Bauernzug.';
-    if (who === 'bot') return 'Der Computer hat deinen Bauern im Vorbeigehen geschnappt. Das ist ein besonderer Bauernzug!';
-    return TEAM[who].die + ' haben im Vorbeigehen geschnappt. Das ist ein besonderer Bauernzug!';
+    const regel = ' Das darf ein Bauer, wenn ein anderer Bauer mit zwei Feldern an ihm vorbeiläuft.';
+    if (who === 'ich') return 'Im Vorbeigehen geschnappt!' + regel;
+    if (who === 'bot') return 'Der Computer hat deinen Bauern im Vorbeigehen geschnappt.' + regel;
+    return TEAM[who].die + ' haben im Vorbeigehen geschnappt.' + regel;
   },
   cap(who, t) {
     if (who === 'ich') return 'Schnapp! Du hast ' + P[t].einen + ' geschnappt. ' + (P[t].pts === 1 ? 'Das ist 1 Punkt.' : 'Das sind ' + P[t].pts + ' Punkte!');
     if (who === 'bot') return 'Oh! Der Computer hat ' + P[t].deinen + ' geschnappt.';
     return TEAM[who].die + ' haben ' + P[t].einen + ' geschnappt.';
   },
-  castle(who) {
-    if (who === 'ich') return 'Du hast die Rochade gemacht! Dein König ist jetzt gut versteckt.';
-    if (who === 'bot') return 'Der Computer hat die Rochade gemacht.';
-    return TEAM[who].die + ' haben die Rochade gemacht.';
+  /* Die Rochade heißt bei Elo „Zaubertrick“. kennt: Elo hat den Trick schon gezeigt. */
+  castle(who, kennt) {
+    const trick = ' König und Turm haben die Plätze getauscht. Das heißt <b>Rochade</b>.';
+    if (who === 'ich') return kennt ? 'Der Zaubertrick! Dein König ist jetzt gut versteckt.' : 'Das war ein Zaubertrick!' + trick + ' Jetzt ist dein König gut versteckt.';
+    if (who === 'bot') return kennt ? 'Der Computer hat den Zaubertrick gemacht: die Rochade.' : 'Der Computer hat einen Zaubertrick gemacht!' + trick;
+    return kennt ? TEAM[who].die + ' haben den Zaubertrick gemacht: die Rochade.' : TEAM[who].die + ' haben einen Zaubertrick gemacht!' + trick;
   },
+  castleOffer: 'Ich kenne einen <b>Zaubertrick</b> für den König! Soll ich ihn zeigen?',
+  castleShow: 'Schau zu: Der König geht zwei Felder zur Seite, und der Turm springt über ihn. So ist der König gut versteckt. Das heißt <b>Rochade</b>.',
+  castleDo: 'Und so geht es: Erst auf den König tippen, dann auf das leuchtende Feld.',
+  castleNow: 'Jetzt geht der <b>Zaubertrick</b>: Der König kann sich verstecken!',
   /* Schutzengel */
   warnPatt: '<b>Halt!</b> Dann ist es <b>Patt</b>: Der Gegner kann nicht mehr ziehen, steht aber nicht im Schach. Dann gewinnt keiner!',
-  warnMatt: '<b>Halt!</b> Dann kann der Gegner <b>Schachmatt</b> setzen!',
+  warnMatt: '<b>Halt!</b> Dann kann der Gegner <b>Schachmatt</b> setzen. Dann wäre das Spiel verloren!',
   warnLoss(type, two) { return '<b>Halt!</b> Dann schnappt der Gegner <b>' + myAcc(type, two) + '</b>.'; },
   warnRep: '<b>Halt!</b> Diese Stellung gab es schon oft. Noch einmal, und es ist unentschieden.',
   warnBack: 'Gut aufgepasst! Such dir einen anderen Zug.',
@@ -1823,10 +1848,10 @@ const T = {
   why(e) {
     switch (e.k) {
       case 'matt': return 'Mit diesem Zug ist es <b>Schachmatt</b>! Dann hast du gewonnen!';
-      case 'rochade': return 'Mach die <b>Rochade</b>! Dein König hüpft in die Ecke und ist sicher. Und der Turm kommt ins Spiel.';
+      case 'rochade': return T.castleNow + ' ' + T.castleDo;
       case 'umwandlung': return 'Dein Bauer kommt ans Ziel. Dann wird er zur <b>Dame</b>!';
       case 'gewinn': return 'Hier kannst du <b>' + P[e.cap].den + '</b> schnappen!';
-      case 'tausch': return 'Hier kannst du <b>' + P[e.cap].den + '</b> schnappen. Das ist ein guter Tausch.';
+      case 'tausch': return 'Hier kannst du <b>' + P[e.cap].den + '</b> schnappen. Das lohnt sich!';
       case 'retten': return '<b>' + P[e.piece].dein + '</b> ist in Gefahr! So bringst du ' + P[e.piece].ihn + ' in Sicherheit.';
       case 'schach': return 'Sag <b>Schach</b>! So greifst du den König an.';
       case 'schuetzen': return '<b>' + P[e.piece].dein + '</b> ist in Gefahr. Mit diesem Zug beschützt du ' + P[e.piece].ihn + '.';
@@ -1859,6 +1884,7 @@ const T = {
   card(c) { return c.n + '. ' + c.t; },
   /* Einrichten und Einstellungen */
   setupBot: 'Wie schwer soll es sein? Und wer möchtest du sein: Einhörner oder Dinos? Dann tippe auf Los!',
+  setupNeu: 'Kennst du die Figuren schon? In der Schach-Schule zeige ich sie dir. Oder leg gleich los!',
   setupDuo: 'Wie sitzt ihr? Nebeneinander oder gegenüber? Und soll Elo helfen? Dann tippt auf Los!',
   voiceOn: 'Ich lese dir alles vor!',
   figure(t) { const p = P[t]; return 'Das ist ' + p.ein + '. ' + p.how + (p.pts ? ' ' + (p.pts === 1 ? 'Er ist 1 Punkt wert.' : (t === 5 ? 'Sie' : 'Er') + ' ist ' + p.pts + ' Punkte wert.') : ' Ohne ihn ist das Spiel aus!'); },
@@ -1867,6 +1893,9 @@ const T = {
   schoolPromo: 'Juhu! Der Bauer ist ganz hinten angekommen. Jetzt ist er eine <b>Dame</b> und darf ziehen wie sie!',
   deadEnd: 'Hoppla! So kommt die Figur nicht mehr ans Ziel. Wir fangen nochmal an.',
   notMate(check) { return check ? 'Das ist Schach, aber noch kein Schachmatt. Der König kann sich noch retten. Probier es nochmal!' : 'Das ist noch kein Schachmatt. Der König muss angegriffen werden und darf nicht mehr weg können. Probier es nochmal!'; },
+  rochadeZeig: 'Schau zu: Der König geht zwei Felder zur Seite, und der Turm springt über ihn.',
+  rochadeFalsch: 'Das war ein normaler Zug. Für den Zaubertrick tippst du auf den König und dann zwei Felder daneben.',
+  rochadeGut: 'Das war die <b>Rochade</b>! Der König ist versteckt, und der Turm kann mitspielen.',
   out: { schnappen: 'Das war <b>Schnappen!</b> Die Figur, die Schach gab, ist weg.', schleichen: 'Das war <b>Schleichen!</b> Der König hat sich weggeschlichen.', schuetzen: 'Das war <b>Schützen!</b> Jetzt steht eine Figur dazwischen.' },
   mated: '<b>Schachmatt!</b> Der König kann sich nicht mehr retten.',
   quizFact(a, b) {
@@ -1908,23 +1937,23 @@ T.key = function (s) { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { 
 T.catalog = function () {
   const out = [], add = s => { if (Array.isArray(s)) s.forEach(add); else if (s) out.push(s); };
   add(T.hello); add(T.thinks); add(T.botCheck); add(T.legend); add(T.promoAsk);
-  add([T.warnPatt, T.warnMatt, T.warnRep, T.warnBack, T.hintThink, T.hintNone, T.hint1, T.undo, T.giftAsk, T.locked, T.setupBot, T.setupDuo, T.voiceOn]);
+  add([T.warnPatt, T.warnMatt, T.warnRep, T.warnBack, T.hintThink, T.hintNone, T.hint1, T.undo, T.giftAsk, T.locked, T.setupBot, T.setupNeu, T.setupDuo, T.voiceOn]);
+  add([T.ideaMitte, T.ideaRaus, T.ideaZiel, T.castleOffer, T.castleShow, T.castleDo, T.castleNow, T.rochadeZeig, T.rochadeFalsch]);
   add([T.starGo, T.schoolPromo, T.deadEnd, T.hintStar, T.hintFen1, T.hintFen2, T.gold.n + '. ' + T.gold.what, T.notMate(true), T.notMate(false)]);
   [false, true].forEach(two => {
     [0, 1].forEach(team => {
-      add(T.greet(two, team)); add(T.turn(two, team)); add(T.mateChance(two, team));
-      [true, false].forEach(hf => add(T.check(two, team, hf)));
+      add(T.greet(two, team)); add(T.turn(two, team)); add(T.mateChance(two, team, false)); add(T.mateChance(two, team, true));
+      [true, false].forEach(hf => [true, false].forEach(first => [true, false].forEach(s3 => add(T.check(two, team, hf, first, s3)))));
       for (let t = 1; t <= 5; t++) { add(T.threat(t, two, team, false)); add(T.threat(t, two, team, true)); }
     });
     add(T.freeCap(two));
     for (let t = 1; t <= 5; t++) add(T.warnLoss(t, two));
   });
-  D.TIPS.forEach((x, i) => add(T.tip(i)));
   for (let t = 1; t <= 6; t++) { add(T.info(t)); add(T.peek(t, true)); add(T.peek(t, false)); add(T.figure(t)); add(T.why({ k: 'gut', piece: t })); }
   add(T.stuck(true)); add(T.stuck(false));
   ['ich', 'bot', 0, 1].forEach(who => {
     [2, 3, 4, 5].forEach(t => add(T.promo(who, t)));
-    add(T.ep(who)); add(T.castle(who));
+    add(T.ep(who)); add(T.castle(who, true)); add(T.castle(who, false));
     for (let t = 1; t <= 5; t++) add(T.cap(who, t));
   });
   ['matt', 'rochade', 'umwandlung', 'schach', 'mitte', 'laeufer'].forEach(k => add(T.why({ k: k })));
@@ -1935,7 +1964,7 @@ T.catalog = function () {
   D.GIFTS.forEach(g => add(T.giftGot(g)));
   D.CARDS.forEach(c => add(T.card(c)));
   D.LESSONS.forEach(l => { add(l.intro); l.tasks.forEach(t => { add(t.say); if (t.quiz) { const a = D.KIND[t.quiz[0]], b = D.KIND[t.quiz[1]]; add(T.passed(3, T.quizRight(a, b))); add(T.passed(2, T.quizRight(a, b))); add(T.quizWrong(a, b)); } }); });
-  [3, 2, 1].forEach(st => { [T.out.schnappen, T.out.schleichen, T.out.schuetzen, T.mated].forEach(w => add(T.passed(st, w))); });
+  [3, 2, 1].forEach(st => { [T.out.schnappen, T.out.schleichen, T.out.schuetzen, T.mated, T.rochadeGut].forEach(w => add(T.passed(st, w))); });
   add(T.passed(3, '', 3)); for (let n = 1; n <= 8; n++) { add(T.passed(2, '', n)); add(T.passed(1, '', n)); }
   [[true, 3], [false, 2], [false, 3]].forEach(x => add(T.finishedRead(x[0], x[1])));
   return out;
@@ -1946,7 +1975,7 @@ return T;
 if (typeof module !== 'undefined' && module.exports) module.exports = Txt;
 
 /* Verzeichnis der eingesprochenen Sätze – wird von stimme/master.py erzeugt. Nicht von Hand ändern. */
-var VoiceIndex = {"file":"stimme-244b6f99.mp3","size":5558633,"voice":"thorsten-high","sr":22050,"map":{"17i3ale":[0,14733],"c7t7yn":[14733,7836],"56ilmw":[22569,7523],"134m2fw":[30092,12225],"1vbkepj":[42317,8620],"1xx16cx":[50937,17868],"trb97a":[68805,19748],"enz73n":[88553,8777],"cb9ekt":[97330,7523],"hqrzpb":[104853,27428],"3z17h":[132281,6739],"1gr115t":[139020,14576],"16qu1lr":[153596,13792],"k3d2wd":[167388,13792],"wceo0n":[181180,14576],"1sojoxp":[195756,4702],"14at10k":[200458,14419],"1t8t1fz":[214877,4859],"blenwk":[219736,15987],"1a589gx":[235723,5172],"1r2wwv1":[240895,5329],"1pr9mi8":[246224,7680],"1hdwgjc":[253904,6426],"uramjw":[260330,7366],"obe310":[267696,7053],"nkxecy":[274749,7053],"ftxs7f":[281802,17241],"1jmjyx":[299043,6896],"1ifgab4":[305939,5015],"ll08cb":[310954,10031],"1s3a64t":[320985,7523],"8ee3c8":[328508,6583],"1nkh44c":[335091,7366],"hwld5i":[342457,7053],"1fvka4z":[349510,9717],"2zonry":[359227,15046],"nz7wkp":[374273,14890],"24hvwx":[389163,16770],"s64rjb":[405933,7680],"2c8ubj":[413613,11128],"1j9ef5b":[424741,9561],"1r8z0c3":[434302,6583],"1nxokor":[440885,14890],"45xpyn":[455775,9561],"1tkz7mu":[465336,12382],"1rr8quy":[477718,7993],"rpt65j":[485711,6896],"1fp25ke":[492607,8777],"1h4htrh":[501384,20062],"4ybuw8":[521446,12225],"ryyte5":[533671,6896],"23xk68":[540567,11441],"cllcc4":[552008,4388],"bi8497":[556396,14733],"lu8hsx":[571129,6112],"x9cyrh":[577241,10814],"1w0ioap":[588055,25391],"8zqkof":[613446,16457],"1ry1li3":[629903,12539],"18pee0w":[642442,13479],"mohyhy":[655921,12382],"fhyfuc":[668303,14263],"1rjvtea":[682566,12539],"1xmgbkk":[695105,14419],"ffpqgs":[709524,13479],"7s7o38":[723003,12068],"r5cimy":[735071,7836],"18wsl9f":[742907,5172],"16maepr":[748079,7210],"1ldummk":[755289,14419],"1170von":[769708,13949],"11femqp":[783657,14890],"1grhg9f":[798547,15830],"9klxh6":[814377,14106],"9jmgu1":[828483,12382],"16fpm6u":[840865,6112],"11ycq98":[846977,11598],"1cxouob":[858575,7680],"yebg52":[866255,18965],"1gsxkgx":[885220,5799],"170w0ga":[891019,17397],"1bwb9ae":[908416,21002],"1d1hi1p":[929418,18651],"1e3dwkg":[948069,18808],"xs6qqa":[966877,18338],"1jizrgs":[985215,18494],"1l5d0h9":[1003709,18494],"18b87nb":[1022203,7680],"17x1doi":[1029883,17711],"1bhuq2m":[1047594,15203],"1uhiyt6":[1062797,19905],"13e9dqx":[1082702,16300],"1rohkrg":[1099002,18024],"geex0e":[1117026,16143],"xsq5uw":[1133169,17554],"30jgih":[1150723,19278],"kkp46r":[1170001,6739],"1ewlilk":[1176740,16770],"uv0qmb":[1193510,16300],"v2inrx":[1209810,14890],"1jcjo7j":[1224700,15046],"2o40ty":[1239746,14890],"2stsw1":[1254636,14106],"rdjmz5":[1268742,8307],"x8ndf5":[1277049,16300],"1hde8s1":[1293349,17084],"1m4y0uc":[1310433,7366],"1212m2x":[1317799,11755],"1d8u2bd":[1329554,8307],"1f5mekt":[1337861,17711],"8i6rmm":[1355572,12225],"4or8mu":[1367797,9090],"1asfeye":[1376887,22570],"1m89o2i":[1399457,12225],"r64jm":[1411682,11912],"57vtoi":[1423594,21629],"x41np0":[1445223,13009],"kevs1u":[1458232,14576],"wm0u8q":[1472808,13322],"1k2odn0":[1486130,7366],"1bjixj4":[1493496,10031],"10jdovz":[1503527,8307],"9zdg4z":[1511834,19748],"1l4w1w5":[1531582,10658],"1vpf8fa":[1542240,10814],"1xprc1c":[1553054,17241],"eec9cu":[1570295,6426],"du4nsw":[1576721,8934],"1fk8yfx":[1585655,14576],"slyvti":[1600231,10814],"j8d6wy":[1611045,9404],"uua1di":[1620449,14733],"1d08zzv":[1635182,8934],"5ehlmp":[1644116,6896],"m757dq":[1651012,11598],"1u0u6m3":[1662610,6583],"myb0w2":[1669193,19278],"1gkn8af":[1688471,9717],"1yxr2nl":[1698188,10188],"b4uwom":[1708376,7993],"i8rxjd":[1716369,12068],"1t7w539":[1728437,6739],"1r8i4j8":[1735176,12539],"2d1on":[1747715,9717],"so8eyf":[1757432,11441],"1vyvb13":[1768873,6112],"5q96qi":[1774985,15830],"1ekvi4l":[1790815,5642],"85spsl":[1796457,9717],"143dy2o":[1806174,7366],"2mbvbh":[1813540,11755],"zdsco8":[1825295,5956],"1sb8pel":[1831251,6583],"1jamm0i":[1837834,15830],"1gicy7c":[1853664,9247],"v3su7i":[1862911,15673],"yyq4ql":[1878584,9561],"voufko":[1888145,11285],"z24kw5":[1899430,5956],"aifmac":[1905386,9247],"17tszcg":[1914633,7053],"19wlfwn":[1921686,9874],"8qce8p":[1931560,8620],"1tubqbm":[1940180,10501],"19v6blf":[1950681,10501],"1nsgebb":[1961182,10188],"1b9oz2x":[1971370,6112],"flq1hh":[1977482,13949],"h5klpv":[1991431,13479],"1y2c269":[2004910,13792],"o8yfkn":[2018702,13165],"pvpq8v":[2031867,8463],"1wb6h8l":[2040330,12382],"hmz4ye":[2052712,7680],"1qsq1sa":[2060392,10501],"6f39ml":[2070893,12225],"1xii9ny":[2083118,6269],"4v9h4c":[2089387,12382],"1ssbn58":[2101769,6739],"lqrczi":[2108508,13479],"z9w348":[2121987,10814],"1ckoqyi":[2132801,7053],"v6wm2w":[2139854,10344],"v9tefa":[2150198,7680],"1v622t1":[2157878,13792],"1ok6s4j":[2171670,14890],"1eyim21":[2186560,14106],"1sachs1":[2200666,16300],"x3o915":[2216966,17868],"1j8v0be":[2234834,10501],"kxsvlt":[2245335,10814],"1heo915":[2256149,15987],"14sifg8":[2272136,15830],"ug8cqy":[2287966,15203],"vuu10k":[2303169,14733],"1egk0jb":[2317902,13792],"10kt90j":[2331694,12695],"5sjx6d":[2344389,12382],"4102b3":[2356771,11285],"1tsb7hb":[2368056,13479],"k6r3h3":[2381535,14263],"h7i2wt":[2395798,12539],"hkhv3n":[2408337,13165],"w5xtlm":[2421502,12852],"1vao4cg":[2434354,13165],"1o2uan2":[2447519,11912],"17vwj5e":[2459431,12068],"1r5nean":[2471499,10814],"anlqn5":[2482313,10814],"u5umy3":[2493127,10188],"1871803":[2503315,11598],"1k7m17n":[2514913,14419],"1v5ml5t":[2529332,11285],"1d5xhgn":[2540617,12382],"1mj2wlq":[2552999,12695],"12cj444":[2565694,13165],"10dx2eq":[2578859,11285],"1fqcsba":[2590144,11755],"1jc2e9n":[2601899,10971],"ohbhd":[2612870,5799],"ogfaht":[2618669,5485],"ox0yu2":[2624154,13322],"tu8eo4":[2637476,9247],"11ytr9o":[2646723,10344],"8l35gm":[2657067,6896],"onysqn":[2663963,14419],"11khij2":[2678382,9561],"1gzctj9":[2687943,11128],"vtndic":[2699071,8620],"1d5ueno":[2707691,8463],"16uajfi":[2716154,9090],"15gciyn":[2725244,9247],"p0t59y":[2734491,8307],"19e3g1n":[2742798,7366],"1018bhx":[2750164,9247],"18k4myq":[2759411,7366],"1sax5if":[2766777,8620],"ye0pm2":[2775397,8307],"uzs3it":[2783704,9247],"v9rp7s":[2792951,8934],"1tutzye":[2801885,8620],"1wwpml3":[2810505,8777],"1guxq7f":[2819282,9090],"1ex3bcb":[2828372,9404],"1e34i9e":[2837776,9090],"klk2dg":[2846866,7993],"i3nn4p":[2854859,8307],"fdnx05":[2863166,8777],"vqv7w9":[2871943,7836],"y8rn50":[2879779,8463],"1r7kbnu":[2888242,7836],"1nlphn7":[2896078,7366],"mp6bo7":[2903444,8620],"1lcx27x":[2912064,8307],"1h730tc":[2920371,8620],"1i9lpp2":[2928991,7836],"1gdi9mz":[2936827,10188],"1lbhcbr":[2947015,8150],"1nfq96p":[2955165,9874],"rv0qsj":[2965039,8307],"omemdm":[2973346,9247],"1w2y0e9":[2982593,8934],"129soa0":[2991527,9404],"q8q0oc":[3000931,24921],"1bg5uoi":[3025852,7053],"1p65cgj":[3032905,18808],"vfl7ee":[3051713,6739],"1ifupun":[3058452,21629],"4j1p8s":[3080081,14733],"16wa387":[3094814,13009],"d3t70k":[3107823,10188],"1rlwzwc":[3118011,18808],"1uz91s0":[3136819,6583],"1ohnkhd":[3143402,15830],"1bopr42":[3159232,10031],"1j21jsv":[3169263,25234],"1ldw87e":[3194497,7053],"q1j0sj":[3201550,17554],"1fd4l8h":[3219104,12695],"5owxnw":[3231799,10501],"xyriuq":[3242300,12225],"484rw2":[3254525,13949],"1jq1eku":[3268474,12382],"1gdvegs":[3280856,13792],"1rgp2gx":[3294648,12382],"16tcowc":[3307030,13792],"c2u7d5":[3320822,11755],"bjpi4s":[3332577,12695],"6ob6qo":[3345272,19121],"7s9409":[3364393,17397],"1dk5ai6":[3381790,16927],"ac4q91":[3398717,15673],"1oq5d1g":[3414390,15203],"1i59dbf":[3429593,16300],"1dmt5l1":[3445893,15830],"119omzd":[3461723,16614],"1vpiixq":[3478337,16143],"lbb44v":[3494480,15203],"nltch1":[3509683,13322],"1llwgvv":[3523005,13636],"i6bvfs":[3536641,13165],"kic2cg":[3549806,14263],"2gvbw4":[3564069,13636],"1caw3zf":[3577705,14419],"1ofh1p8":[3592124,15046],"17j7kj4":[3607170,13792],"sorz4":[3620962,10814],"bndbrc":[3631776,13009],"1bb5wxo":[3644785,6112],"1q1mgrv":[3650897,11755],"1csdrrx":[3662652,10814],"1ip9zdv":[3673466,11441],"uovqpg":[3684907,10814],"1keeqhl":[3695721,13636],"1b2b0y9":[3709357,10971],"yk0vln":[3720328,14419],"19fha9f":[3734747,7993],"1f7mmjb":[3742740,10971],"pekkm4":[3753711,15673],"1baoq2i":[3769384,10971],"1qipuvs":[3780355,13165],"12jxvhu":[3793520,7993],"17569h9":[3801513,14419],"dp1slb":[3815932,14106],"it6ioh":[3830038,7210],"1c6k7qa":[3837248,14419],"xli3o1":[3851667,28839],"1ewtqs8":[3880506,12068],"1b2gtip":[3892574,15987],"h77snn":[3908561,5956],"1y1pvei":[3914517,10188],"oh3www":[3924705,9247],"p2ngy9":[3933952,13949],"1u5598j":[3947901,8934],"81l52z":[3956835,15046],"1rsisyy":[3971881,13949],"1fdwxk6":[3985830,20532],"yc81w6":[4006362,18965],"1kgqje4":[4025327,13792],"4akawz":[4039119,14890],"jvefdu":[4054009,19592],"x4p99v":[4073601,21629],"vfz4t8":[4095230,18181],"szvj0w":[4113411,20219],"wie75d":[4133630,37459],"g57sw7":[4171089,21629],"1ngaheq":[4192718,16143],"1h30g7m":[4208861,17868],"14insij":[4226729,7680],"179zsum":[4234409,20375],"1euv3tk":[4254784,5956],"kygzs7":[4260740,7366],"1frhv9u":[4268106,12068],"13ykwu":[4280174,6269],"11izrzy":[4286443,15360],"8plw7k":[4301803,11441],"i1jse":[4313244,9090],"7y44eu":[4322334,6583],"1d9ej1q":[4328917,7680],"1k4lf3f":[4336597,15830],"1apkw7c":[4352427,13009],"1hb34hd":[4365436,10501],"1mpayro":[4375937,7836],"lxkoww":[4383773,7366],"d3i2nq":[4391139,7993],"h0x0ay":[4399132,22256],"18goiai":[4421388,10344],"1kukl9p":[4431732,9247],"1c3kre6":[4440979,11755],"13ou45l":[4452734,7993],"1okr2gz":[4460727,19905],"1eqish0":[4480632,9561],"1bmysa5":[4490193,11128],"r8uyjl":[4501321,8150],"1jz309d":[4509471,8307],"1h4cvfd":[4517778,10188],"1np0b1d":[4527966,12382],"1rb1oi4":[4540348,6269],"1lr0o3":[4546617,19278],"my2vg7":[4565895,11598],"skjtag":[4577493,9247],"16a5iu1":[4586740,14733],"1lr336k":[4601473,12852],"4czhib":[4614325,6269],"18znw61":[4620594,20532],"1dqroqp":[4641126,10658],"1yqwgou":[4651784,11598],"eke4b":[4663382,14890],"cwadwb":[4678272,6269],"17xzx7j":[4684541,21472],"wils0f":[4706013,11441],"199iw68":[4717454,10501],"uz9z11":[4727955,14263],"sn08gm":[4742218,7210],"jcwsl":[4749428,12695],"1adpdo5":[4762123,7210],"ootz40":[4769333,13322],"1e0zn3m":[4782655,7836],"1giijaw":[4790491,8777],"1wot0vu":[4799268,14890],"4ad56a":[4814158,5015],"1s2kvbi":[4819173,10971],"l0dj7a":[4830144,9247],"7tb35e":[4839391,17084],"1cbrdgx":[4856475,9247],"9ft8eg":[4865722,7680],"dc9lze":[4873402,20532],"yuhh0n":[4893934,11598],"1cgdhyb":[4905532,17868],"1acku00":[4923400,8150],"l4nvp9":[4931550,6896],"lr5ttk":[4938446,6426],"1ormj79":[4944872,10188],"19tk3li":[4955060,12382],"stkobr":[4967442,10344],"1i2qi7r":[4977786,7366],"8xgmu0":[4985152,7210],"skda1z":[4992362,11285],"kmeyyr":[5003647,10188],"1qys70":[5013835,10658],"1bm0djp":[5024493,5485],"10krhoh":[5029978,17241],"1rwceeg":[5047219,7523],"8ku2of":[5054742,9247],"okrc1k":[5063989,11285],"1uuywdb":[5075274,7523],"jrqxx9":[5082797,10971],"1dtdk4h":[5093768,6112],"19cyfsk":[5099880,9874],"1gvcaor":[5109754,13949],"1tu6jtu":[5123703,8777],"fnygkj":[5132480,9561],"ow7ixf":[5142041,9090],"13vmfcw":[5151131,10658],"3w3hul":[5161789,20532],"yi8cj4":[5182321,10971],"1g5t04e":[5193292,9404],"xdr71r":[5202696,10031],"wi74i4":[5212727,8463],"75oaek":[5221190,10501],"1gcdbjw":[5231691,9404],"1vqu8xm":[5241095,10814],"6tmqwr":[5251909,8620],"stlfpx":[5260529,20062],"75dwsx":[5280591,14733],"dratyb":[5295324,13009],"1frw1vz":[5308333,12539],"192ckhq":[5320872,14576],"16hxcu2":[5335448,13792],"qmlkhb":[5349240,13949],"kz36bv":[5363189,13636],"48xipw":[5376825,13165],"qmn2a0":[5389990,13479],"1hly4dh":[5403469,13792],"vriiop":[5417261,13165],"1avrrze":[5430426,14263],"jwt9ce":[5444689,13792],"eatxkr":[5458481,14263],"1d29rsv":[5472744,13165],"19zxs0w":[5485909,14419],"av0qnw":[5500328,14890],"k868wi":[5515218,11912],"1ct2s5y":[5527130,14106],"1a7oibh":[5541236,8777],"1fu73hx":[5550013,8620]}};
+var VoiceIndex = {"file":"stimme-a4c2c53e.mp3","size":5842478,"voice":"thorsten-high","sr":22050,"map":{"17i3ale":[0,14733],"c7t7yn":[14733,7836],"56ilmw":[22569,7523],"134m2fw":[30092,12225],"1vbkepj":[42317,8620],"1xx16cx":[50937,17868],"trb97a":[68805,19748],"enz73n":[88553,8777],"cb9ekt":[97330,7523],"hqrzpb":[104853,27428],"3z17h":[132281,6739],"1et3tb0":[139020,15987],"lksm0v":[155007,9247],"16qu1lr":[164254,13792],"k3d2wd":[178046,13792],"wceo0n":[191838,14576],"1sojoxp":[206414,4702],"14at10k":[211116,14419],"1t8t1fz":[225535,4859],"blenwk":[230394,15987],"1a589gx":[246381,5172],"1r2wwv1":[251553,5329],"1pr9mi8":[256882,7680],"1hdwgjc":[264562,6426],"uramjw":[270988,7366],"obe310":[278354,7053],"nkxecy":[285407,7053],"ftxs7f":[292460,17241],"1jmjyx":[309701,6896],"1usry8z":[316597,7836],"wq858w":[324433,10501],"hhdau":[334934,6739],"1ifgab4":[341673,5015],"ll08cb":[346688,10031],"1s3a64t":[356719,7523],"8ee3c8":[364242,6583],"1nkh44c":[370825,7366],"9pga5d":[378191,13949],"1jxz3hg":[392140,12539],"1vz8z0t":[404679,16457],"zvepsk":[421136,6583],"rt2n49":[427719,11128],"1d5ueno":[438847,8463],"13ev2c0":[447310,12068],"h4enhp":[459378,7680],"1mgf8kp":[467058,26331],"yadgc2":[493389,10031],"d7bzto":[503420,7053],"4sfwjn":[510473,22256],"1eduyen":[532729,16614],"1wkfglx":[549343,7366],"1xq54wh":[556709,21316],"hwld5i":[578025,7053],"1fvka4z":[585078,9717],"2zonry":[594795,15046],"nz7wkp":[609841,14890],"24hvwx":[624731,16770],"s64rjb":[641501,7680],"2c8ubj":[649181,11128],"1j9ef5b":[660309,9561],"1r8z0c3":[669870,6583],"1nxokor":[676453,14890],"45xpyn":[691343,9561],"1tkz7mu":[700904,12382],"1rr8quy":[713286,7993],"rpt65j":[721279,6896],"1fp25ke":[728175,8777],"1h4htrh":[736952,20062],"4ybuw8":[757014,12225],"ryyte5":[769239,6896],"23xk68":[776135,11441],"cllcc4":[787576,4388],"bi8497":[791964,14733],"lu8hsx":[806697,6112],"f3nafs":[812809,12382],"j5r0im":[825191,15673],"1bb5wxo":[840864,6112],"1efphde":[846976,16927],"godikj":[863903,9404],"1w0ioap":[873307,25391],"161jtc":[898698,16300],"x9cyrh":[914998,10814],"8zqkof":[925812,16457],"1ry1li3":[942269,12539],"18pee0w":[954808,13479],"mohyhy":[968287,12382],"fhyfuc":[980669,14263],"1rjvtea":[994932,12539],"1xmgbkk":[1007471,14419],"ffpqgs":[1021890,13479],"7s7o38":[1035369,12068],"r5cimy":[1047437,7836],"18wsl9f":[1055273,5172],"16maepr":[1060445,7210],"1ldummk":[1067655,14419],"1170von":[1082074,13949],"11femqp":[1096023,14890],"1grhg9f":[1110913,15830],"9klxh6":[1126743,14576],"9jmgu1":[1141319,12382],"16fpm6u":[1153701,6112],"11ycq98":[1159813,11598],"1cxouob":[1171411,7680],"yebg52":[1179091,18965],"1gsxkgx":[1198056,5799],"7o7r4n":[1203855,16143],"1vkl841":[1219998,20219],"170w0ga":[1240217,17397],"1bwb9ae":[1257614,21002],"1d1hi1p":[1278616,18651],"1e3dwkg":[1297267,18808],"xs6qqa":[1316075,18338],"1jizrgs":[1334413,18494],"1l5d0h9":[1352907,18494],"18b87nb":[1371401,7680],"17x1doi":[1379081,17711],"5enu4j":[1396792,16457],"1dqln3x":[1413249,18494],"1bhuq2m":[1431743,15203],"1uhiyt6":[1446946,19905],"13e9dqx":[1466851,16300],"1rohkrg":[1483151,18024],"geex0e":[1501175,16143],"xsq5uw":[1517318,17554],"30jgih":[1534872,19278],"kkp46r":[1554150,6739],"1ewlilk":[1560889,16770],"uv0qmb":[1577659,16300],"v2inrx":[1593959,14890],"1jcjo7j":[1608849,15046],"2o40ty":[1623895,14890],"eec9cu":[1638785,6426],"du4nsw":[1645211,8934],"1fk8yfx":[1654145,14576],"slyvti":[1668721,10814],"j8d6wy":[1679535,9404],"uua1di":[1688939,14733],"1d08zzv":[1703672,8934],"5ehlmp":[1712606,6896],"m757dq":[1719502,11598],"1u0u6m3":[1731100,6583],"myb0w2":[1737683,19278],"1gkn8af":[1756961,9717],"1yxr2nl":[1766678,10188],"b4uwom":[1776866,7993],"i8rxjd":[1784859,12068],"1t7w539":[1796927,6739],"1r8i4j8":[1803666,12539],"2d1on":[1816205,9717],"so8eyf":[1825922,11441],"1vyvb13":[1837363,6112],"5q96qi":[1843475,15830],"1ekvi4l":[1859305,5642],"85spsl":[1864947,9717],"143dy2o":[1874664,7366],"2mbvbh":[1882030,11755],"zdsco8":[1893785,5956],"1sb8pel":[1899741,6583],"1jamm0i":[1906324,15830],"1gicy7c":[1922154,9247],"v3su7i":[1931401,15673],"yyq4ql":[1947074,9561],"4or8mu":[1956635,9090],"voufko":[1965725,11285],"z24kw5":[1977010,5956],"aifmac":[1982966,9247],"17tszcg":[1992213,7053],"19wlfwn":[1999266,9874],"8qce8p":[2009140,8620],"1tubqbm":[2017760,10501],"19v6blf":[2028261,10501],"1nsgebb":[2038762,10188],"1b9oz2x":[2048950,6112],"flq1hh":[2055062,13949],"h5klpv":[2069011,13479],"1y2c269":[2082490,13792],"o8yfkn":[2096282,13165],"pvpq8v":[2109447,8463],"w2r9zb":[2117910,26018],"1i5oyhy":[2143928,16143],"6vjrbk":[2160071,7053],"10w2f6w":[2167124,13479],"1cpg88g":[2180603,10971],"6f39ml":[2191574,12225],"1xii9ny":[2203799,6269],"4v9h4c":[2210068,12382],"1ssbn58":[2222450,6739],"lqrczi":[2229189,13479],"z9w348":[2242668,10814],"1ckoqyi":[2253482,7053],"v6wm2w":[2260535,10344],"v9tefa":[2270879,7680],"1v622t1":[2278559,13792],"1ok6s4j":[2292351,14890],"1eyim21":[2307241,14106],"1sachs1":[2321347,16300],"x3o915":[2337647,17868],"hb8156":[2355515,17084],"gx0m3j":[2372599,14263],"1heo915":[2386862,15987],"14sifg8":[2402849,15830],"ug8cqy":[2418679,15203],"vuu10k":[2433882,14890],"1egk0jb":[2448772,13792],"10kt90j":[2462564,12695],"5sjx6d":[2475259,12382],"4102b3":[2487641,11285],"1tsb7hb":[2498926,13479],"k6r3h3":[2512405,14263],"1v83qhq":[2526668,17241],"28r537":[2543909,14263],"hkhv3n":[2558172,13165],"w5xtlm":[2571337,12852],"1vao4cg":[2584189,13165],"1o2uan2":[2597354,11912],"17vwj5e":[2609266,12068],"1r5nean":[2621334,10814],"anlqn5":[2632148,10814],"u5umy3":[2642962,10188],"1871803":[2653150,11598],"1k7m17n":[2664748,14419],"6yxaqy":[2679167,17711],"t4shof":[2696878,13009],"1d5xhgn":[2709887,12382],"1mj2wlq":[2722269,12695],"12cj444":[2734964,13165],"10dx2eq":[2748129,11285],"1fqcsba":[2759414,11755],"1jc2e9n":[2771169,10971],"ohbhd":[2782140,5799],"11ytr9o":[2787939,10344],"8l35gm":[2798283,6896],"onysqn":[2805179,14419],"11khij2":[2819598,9561],"1gzctj9":[2829159,11128],"vtndic":[2840287,8620],"16uajfi":[2848907,9090],"15gciyn":[2857997,9247],"1vbipn0":[2867244,4702],"19e3g1n":[2871946,7366],"1018bhx":[2879312,9247],"18k4myq":[2888559,7366],"1sax5if":[2895925,8620],"ye0pm2":[2904545,8307],"uzs3it":[2912852,9247],"v9rp7s":[2922099,8934],"1tutzye":[2931033,8620],"1wwpml3":[2939653,8777],"1guxq7f":[2948430,9090],"1ex3bcb":[2957520,9404],"1e34i9e":[2966924,9090],"klk2dg":[2976014,7993],"i3nn4p":[2984007,8307],"fdnx05":[2992314,8777],"vqv7w9":[3001091,7836],"y8rn50":[3008927,8463],"1r7kbnu":[3017390,7836],"1nlphn7":[3025226,7366],"mp6bo7":[3032592,8620],"1lcx27x":[3041212,8307],"1h730tc":[3049519,8620],"1i9lpp2":[3058139,7836],"1gdi9mz":[3065975,10188],"1lbhcbr":[3076163,8150],"1nfq96p":[3084313,9874],"rv0qsj":[3094187,8307],"omemdm":[3102494,9247],"1w2y0e9":[3111741,8934],"129soa0":[3120675,9404],"q8q0oc":[3130079,24921],"1bg5uoi":[3155000,7053],"1p65cgj":[3162053,18808],"vfl7ee":[3180861,6739],"1ifupun":[3187600,21629],"4j1p8s":[3209229,14733],"16wa387":[3223962,13009],"d3t70k":[3236971,10188],"1rlwzwc":[3247159,18808],"1uz91s0":[3265967,6583],"1ohnkhd":[3272550,15830],"1bopr42":[3288380,10031],"1j21jsv":[3298411,25234],"1ldw87e":[3323645,7053],"q1j0sj":[3330698,17554],"1fd4l8h":[3348252,12695],"5owxnw":[3360947,10501],"xyriuq":[3371448,12225],"484rw2":[3383673,13949],"1jq1eku":[3397622,12382],"1gdvegs":[3410004,13792],"1rgp2gx":[3423796,12382],"16tcowc":[3436178,13792],"c2u7d5":[3449970,11755],"bjpi4s":[3461725,12695],"6ob6qo":[3474420,19121],"7s9409":[3493541,17397],"1dk5ai6":[3510938,16927],"ac4q91":[3527865,15673],"1oq5d1g":[3543538,15203],"1i59dbf":[3558741,16300],"1dmt5l1":[3575041,15830],"119omzd":[3590871,16614],"1vpiixq":[3607485,16143],"lbb44v":[3623628,15203],"nltch1":[3638831,13322],"1llwgvv":[3652153,13636],"i6bvfs":[3665789,13165],"kic2cg":[3678954,14263],"2gvbw4":[3693217,13636],"1caw3zf":[3706853,14419],"1ofh1p8":[3721272,15046],"17j7kj4":[3736318,12852],"sorz4":[3749170,10814],"bndbrc":[3759984,13009],"1q1mgrv":[3772993,11755],"1csdrrx":[3784748,10814],"1ip9zdv":[3795562,11441],"uovqpg":[3807003,10814],"1keeqhl":[3817817,13636],"1b2b0y9":[3831453,10971],"yk0vln":[3842424,14419],"19fha9f":[3856843,7993],"1f7mmjb":[3864836,10971],"pekkm4":[3875807,15673],"1baoq2i":[3891480,10971],"1qipuvs":[3902451,13165],"12jxvhu":[3915616,7993],"17569h9":[3923609,14419],"dp1slb":[3938028,14106],"it6ioh":[3952134,7210],"1c6k7qa":[3959344,14419],"xli3o1":[3973763,28839],"1ewtqs8":[4002602,12068],"1b2gtip":[4014670,15987],"h77snn":[4030657,5956],"1y1pvei":[4036613,10188],"oh3www":[4046801,9247],"p2ngy9":[4056048,13949],"1u5598j":[4069997,9561],"81l52z":[4079558,15046],"1rsisyy":[4094604,13949],"1fdwxk6":[4108553,20532],"yc81w6":[4129085,18965],"1kgqje4":[4148050,13792],"4akawz":[4161842,14890],"jvefdu":[4176732,19592],"x4p99v":[4196324,21629],"vfz4t8":[4217953,18181],"szvj0w":[4236134,20219],"wie75d":[4256353,37459],"g57sw7":[4293812,21629],"1ngaheq":[4315441,16143],"1h30g7m":[4331584,17868],"14insij":[4349452,7680],"179zsum":[4357132,20375],"1euv3tk":[4377507,5956],"kygzs7":[4383463,7366],"1frhv9u":[4390829,12068],"13ykwu":[4402897,6269],"11izrzy":[4409166,15360],"8plw7k":[4424526,11441],"i1jse":[4435967,9090],"7y44eu":[4445057,6583],"1d9ej1q":[4451640,7680],"1k4lf3f":[4459320,15830],"1apkw7c":[4475150,13009],"1hb34hd":[4488159,10501],"1mpayro":[4498660,7836],"lxkoww":[4506496,7366],"d3i2nq":[4513862,7993],"h0x0ay":[4521855,22256],"18goiai":[4544111,10344],"1kukl9p":[4554455,9247],"1c3kre6":[4563702,11755],"13ou45l":[4575457,7993],"1okr2gz":[4583450,19905],"1eqish0":[4603355,9561],"1bmysa5":[4612916,11128],"r8uyjl":[4624044,8150],"1jz309d":[4632194,8307],"1h4cvfd":[4640501,10188],"1np0b1d":[4650689,12382],"1rb1oi4":[4663071,6269],"1lr0o3":[4669340,19278],"my2vg7":[4688618,11598],"skjtag":[4700216,9247],"16a5iu1":[4709463,14733],"1lr336k":[4724196,12852],"4czhib":[4737048,6269],"18znw61":[4743317,20532],"1dqroqp":[4763849,10658],"1yqwgou":[4774507,11598],"eke4b":[4786105,14890],"cwadwb":[4800995,6269],"17xzx7j":[4807264,21472],"wils0f":[4828736,11441],"199iw68":[4840177,10501],"uz9z11":[4850678,14263],"sn08gm":[4864941,7210],"jcwsl":[4872151,12695],"1adpdo5":[4884846,7210],"ootz40":[4892056,13322],"1e0zn3m":[4905378,7836],"1giijaw":[4913214,8777],"1wot0vu":[4921991,14890],"4ad56a":[4936881,5015],"1s2kvbi":[4941896,10971],"l0dj7a":[4952867,9247],"7tb35e":[4962114,17084],"1cbrdgx":[4979198,9247],"9ft8eg":[4988445,7680],"93qupi":[4996125,13165],"1x77ekm":[5009290,6426],"pd46j6":[5015716,10501],"13ryzgz":[5026217,16614],"xcirp2":[5042831,17241],"1fwb9tc":[5060072,20219],"1gkej2i":[5080291,26645],"dc9lze":[5106936,20532],"yuhh0n":[5127468,11598],"1cgdhyb":[5139066,17868],"1acku00":[5156934,8150],"l4nvp9":[5165084,6896],"lr5ttk":[5171980,6426],"1ormj79":[5178406,10188],"19tk3li":[5188594,12382],"stkobr":[5200976,10344],"1i2qi7r":[5211320,7366],"8xgmu0":[5218686,7210],"skda1z":[5225896,11285],"kmeyyr":[5237181,10188],"1qys70":[5247369,10658],"1bm0djp":[5258027,5485],"10krhoh":[5263512,17241],"1rwceeg":[5280753,7523],"8ku2of":[5288276,9247],"okrc1k":[5297523,11285],"1uuywdb":[5308808,7523],"jrqxx9":[5316331,10971],"1dtdk4h":[5327302,6112],"19cyfsk":[5333414,9874],"1gvcaor":[5343288,13949],"1tu6jtu":[5357237,8777],"fnygkj":[5366014,9561],"ow7ixf":[5375575,9090],"13vmfcw":[5384665,10658],"3w3hul":[5395323,20532],"o70g4a":[5415855,10344],"1msh8jg":[5426199,17241],"yi8cj4":[5443440,10971],"1g5t04e":[5454411,9404],"xdr71r":[5463815,10031],"wi74i4":[5473846,8463],"75oaek":[5482309,10501],"140li5y":[5492810,11755],"1gcdbjw":[5504565,9404],"1vqu8xm":[5513969,10814],"6tmqwr":[5524783,8620],"stlfpx":[5533403,20062],"13nr01u":[5553465,10501],"75dwsx":[5563966,14733],"dratyb":[5578699,13009],"1frw1vz":[5591708,12539],"192ckhq":[5604247,14576],"16hxcu2":[5618823,13792],"qmlkhb":[5632615,13949],"kz36bv":[5646564,13636],"48xipw":[5660200,13165],"qmn2a0":[5673365,13479],"1hly4dh":[5686844,13792],"vriiop":[5700636,13165],"1avrrze":[5713801,14263],"jwt9ce":[5728064,13792],"eatxkr":[5741856,14263],"1d29rsv":[5756119,13165],"19zxs0w":[5769284,14419],"av0qnw":[5783703,14890],"k868wi":[5798593,11912],"1ct2s5y":[5810505,14106],"1a7oibh":[5824611,8777],"1fu73hx":[5833388,9090]}};
 
 /* =========================================================
    Merken, Töne, Vorlesen, Computer-Gegner im Hintergrund.
@@ -1987,7 +2016,7 @@ function fresh() {
     v: 1, gifts: [], gold: 0,
     equip: { board: 'zauberwald', u: 'schnee', d: 'gruen', hatU: '', hatD: '' },
     set: { voice: true, sound: true, symbols: false },
-    wins: [0, 0, 0, 0, 0], school: {}, seen: {}, save: null,
+    wins: [0, 0, 0, 0, 0], school: {}, seen: {}, know: {}, save: null,
     last: { level: 1, human: 0, seat: 'neben', help: true }
   };
 }
@@ -2088,14 +2117,14 @@ function getPlayer() {
   if (!player) { try { player = new window.Audio(); player.preload = 'auto'; } catch (e) { player = null; } }
   return player;
 }
-function playUnits(list, mine) {
+function playUnits(list, mine, done) {
   const el = getPlayer();
   if (!el) return false;
   let i = 0;
   const next = () => {
     if (mine !== speakTok) return;
     if (lastUrl) { try { URL.revokeObjectURL(lastUrl); } catch (e) { /* egal */ } lastUrl = ''; }
-    if (i >= list.length) { talking = false; return; }
+    if (i >= list.length) { talking = false; if (done) done(); return; }
     const e = list[i++];
     try {
       lastUrl = URL.createObjectURL(new Blob([pack.buf.slice(e[0], e[0] + e[1])], { type: 'audio/mpeg' }));
@@ -2104,7 +2133,7 @@ function playUnits(list, mine) {
       el.src = lastUrl;
       talking = true;
       const p = el.play();
-      if (p && p.then) p.then(() => { unlocked = true; }).catch(() => { if (mine === speakTok) talking = false; /* ohne Fingertipp darf noch nichts spielen */ });
+      if (p && p.then) p.then(() => { unlocked = true; }).catch(() => { if (mine === speakTok) { talking = false; if (done) done(); } /* ohne Fingertipp darf noch nichts spielen */ });
     } catch (err) { next(); }
   };
   next();
@@ -2122,8 +2151,8 @@ function findVoice() {
 }
 if (canDevice) { findVoice(); try { window.speechSynthesis.addEventListener('voiceschanged', findVoice); } catch (e) { /* alt */ } }
 let speakTimer = 0, unlocked = false;
-function deviceSpeak(text, mine) {
-  if (!canDevice || !text) return;
+function deviceSpeak(text, mine, done) {
+  if (!canDevice || !text) { if (done) setTimeout(done, 900 + String(text || '').length * 62); return; }
   speakTimer = setTimeout(() => {
     if (mine !== speakTok) return;
     try {
@@ -2131,8 +2160,9 @@ function deviceSpeak(text, mine) {
       const u = new window.SpeechSynthesisUtterance(text.replace(/[„“”"»«]/g, ''));
       u.lang = 'de-DE'; if (voice) u.voice = voice;
       u.rate = 1; u.pitch = 1;
+      if (done) { u.onend = done; u.onerror = done; }
       window.speechSynthesis.speak(u);
-    } catch (e) { /* dann eben still */ }
+    } catch (e) { if (done) done(); /* dann eben still */ }
   }, 70);
 }
 function hush() {
@@ -2141,23 +2171,29 @@ function hush() {
   if (player) { try { player.onended = null; player.onerror = null; player.pause(); } catch (e) { /* egal */ } }
   if (canDevice) { try { window.speechSynthesis.cancel(); } catch (e) { /* egal */ } }
 }
-/* x: ein Text oder mehrere Teile (jeder Teil ist ein Text aus Txt) */
-function speak(x) {
-  if (!S.set.voice) return;
-  hush();
+/* x: ein Text oder mehrere Teile (jeder Teil ist ein Text aus Txt).
+   then: wird gerufen, wenn fertig gesprochen ist (ohne Ton nach einer Lesepause) – aber nur,
+   wenn inzwischen nichts anderes gesagt wurde. */
+function speak(x, then) {
   const parts = (Array.isArray(x) ? x : [x]).filter(Boolean);
-  if (!parts.length) return;
+  const lesen = 900 + parts.map(Txt.plain).join(' ').length * 62;
+  if (!S.set.voice) { if (then) { hush(); const t = speakTok; speakTimer = setTimeout(() => { if (t === speakTok) then(); }, lesen); } return; }
+  hush();
+  if (!parts.length) { if (then) then(); return; }
   const mine = speakTok;
+  let fertig = false;
+  const done = then ? () => { if (!fertig && mine === speakTok) { fertig = true; then(); } } : null;
+  if (done) setTimeout(done, lesen * 1.6 + 3000);   /* Notbremse, falls der Ton hängt */
   const go = () => {
     if (mine !== speakTok) return;
     if (pack.state === 'da') {
       const list = [];
       let ok = true;
       parts.forEach(p => Txt.units(p).forEach(u => { const e = VI.map[Txt.key(u)]; if (e) list.push(e); else ok = false; }));
-      if (ok && list.length && playUnits(list, mine)) return;
+      if (ok && list.length && playUnits(list, mine, done)) return;
     }
-    if (pack.state === 'laedt') return;   /* lieber kurz still als mit fremder Stimme */
-    deviceSpeak(parts.map(Txt.plain).join(' '), mine);
+    if (pack.state === 'laedt') { if (done) setTimeout(done, lesen); return; }   /* lieber kurz still als mit fremder Stimme */
+    deviceSpeak(parts.map(Txt.plain).join(' '), mine, done);
   };
   if (pack.state === 'neu') loadVoice();
   if (pack.state === 'laedt') { pack.wait.push(go); return; }
@@ -2432,19 +2468,22 @@ P.flag = function (sq, cls, on) { const el = this.pcs[sq]; if (el) this.mark(el,
 P.unflag = function (cls) { for (const s in this.pcs) this.mark(this.pcs[s], cls, false); };
 
 /* Zug zeigen, ohne ihn schon zu machen (für „Halt! Willst du das wirklich?“) */
-P.preview = function (from, to) {
+/* rook: [von, nach] – bei der Rochade zieht der Turm mit */
+P.preview = function (from, to, rook) {
   this.unpreview();
   const el = this.pcs[from]; if (!el) return;
-  const victim = this.pcs[to];
-  this.pv = { el: el, from: from, victim: victim };
+  const victim = this.pcs[to], el2 = rook ? this.pcs[rook[0]] : null;
+  this.pv = { el: el, from: from, victim: victim, el2: el2, from2: rook ? rook[0] : -1 };
   this.mark(el, 'sel', false);
-  this.glide(el, to, 200);
+  this.glide(el, to, rook ? 520 : 200);
+  if (el2) this.glide(el2, rook[1], 620);
   if (victim) this.mark(victim, 'ghost');
 };
 P.unpreview = function () {
   const pv = this.pv; if (!pv) return;
   this.pv = null;
   this.glide(pv.el, pv.from, 200);
+  if (pv.el2) this.glide(pv.el2, pv.from2, 200);
   if (pv.victim) this.mark(pv.victim, 'ghost', false);
 };
 
@@ -2831,6 +2870,34 @@ function dress(bv) {
 return { apply: apply, dress: dress, board: board, skin: skin, vars: vars, mix: mix };
 })();
 
+/* Welches Brett? Echtes 3D, wenn das Gerät es kann und es nicht abgeschaltet ist – sonst das gezeichnete. */
+var Brett = (function () {
+'use strict';
+let geprueft = false;
+function kann() {
+  if (typeof Drei === 'undefined' || !Drei) return false;
+  if (!geprueft) { geprueft = true; try { Drei.pruefe(); } catch (e) { return false; } }
+  return !!Drei.ok;
+}
+const drei = () => kann() && !Sys.S.set.flat;
+function neu(stage, o) {
+  let b = null;
+  if (drei()) b = Drei.neu(stage, o);
+  if (!b) b = new BoardView(stage, o);
+  b.istDrei = typeof b.kleide === 'function';
+  return b;
+}
+/* Bild einer Figur: in 3D gerendert – oder gezeichnet, wenn 3D nicht geht. hat: '' = ohne Hut */
+function bild(team, kind, hat, px) {
+  if (drei()) {
+    const url = Drei.bild(team, kind, Sys.S.equip[team], hat || '', px || 0);
+    if (url) return '<img class="bild3" alt="" draggable="false" src="' + url + '">';
+  }
+  return '<span class="t' + team + '" style="display:block;width:100%;height:100%">' + Art.piece(team, kind, hat || '') + '</span>';
+}
+return { neu: neu, drei: drei, bild: bild };
+})();
+
 var Ui = (function () {
 'use strict';
 const h = Sys.h;
@@ -2896,7 +2963,7 @@ function confetti(n) {
   setTimeout(() => box.remove(), 4800);
 }
 /* Bild einer Figur für Knöpfe und Karten */
-function fig(team, kind, hat) { return '<span class="t' + team + '" style="display:block;width:100%;height:100%">' + Art.piece(team, kind, hat == null ? Sys.S.equip[team === 'u' ? 'hatU' : 'hatD'] : hat) + '</span>'; }
+function fig(team, kind, hat, px) { return Brett.bild(team, kind, hat == null ? Sys.S.equip[team === 'u' ? 'hatU' : 'hatD'] : hat, px); }
 
 /* Elo, der Schach-Elefant, mit Sprechblase */
 function coach(host) {
@@ -2910,7 +2977,7 @@ function coach(host) {
   host.appendChild(h('div', { class: 'fee', html: Art.svg(Art.ELEFANT, '0 0 120 110') }));
   if (!Sys.canSpeak) again.hidden = true;
   return {
-    /* x: ein Text oder mehrere Teile. opt: { speak, read, actions:[{ label, icon, cls, fn }] } */
+    /* x: ein Text oder mehrere Teile. opt: { speak, read, then, actions:[{ label, icon, cls, fn }] } – then: wenn fertig vorgelesen */
     say(x, opt) {
       opt = opt || {};
       const parts = (Array.isArray(x) ? x : [x]).filter(Boolean), html = parts.join(' ');
@@ -2919,7 +2986,7 @@ function coach(host) {
       acts.textContent = '';
       (opt.actions || []).forEach(a => acts.appendChild(btn(a.label, a.icon, (a.cls || '') + ' small', a.fn)));
       acts.hidden = !(opt.actions && opt.actions.length);
-      if (opt.speak) Sys.speak(spoken);
+      if (opt.speak) Sys.speak(spoken, opt.then); else if (opt.then) opt.then();
     },
     get text() { return text.innerHTML; }
   };
@@ -2955,7 +3022,10 @@ function miniBoard(b) {
   for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) { const dark = (x + y) % 2 === 1; s += '<i style="background:' + (dark ? (b.rainbow ? b.rainbow[(x * 2 + y) % b.rainbow.length] : b.d) : b.l) + '"></i>'; }
   return s + '</span>';
 }
-function skinFig(team, skinId, kind) { return '<span style="display:block;width:100%;height:100%;' + Look.vars(Look.skin(team, skinId).c) + '">' + Art.piece(team, kind || 'n', '') + '</span>'; }
+function skinFig(team, skinId, kind) {
+  if (Brett.drei()) { const url = Drei.bild(team, kind || 'n', skinId, '', 192); if (url) return '<img class="bild3" alt="" draggable="false" src="' + url + '">'; }
+  return '<span style="display:block;width:100%;height:100%;' + Look.vars(Look.skin(team, skinId).c) + '">' + Art.piece(team, kind || 'n', '') + '</span>';
+}
 function picture(g) {
   if (g.kind === 'b') return '<span style="display:block;width:100%;height:100%;border-radius:14px;overflow:hidden;border:3px solid var(--ink)">' + miniBoard(Look.board(g.ref)) + '</span>';
   if (g.kind === 'u' || g.kind === 'd') return skinFig(g.kind, g.ref, 'k');
@@ -3111,11 +3181,18 @@ function mount() {
   [els.stage, els.top, els.coach, els.btns, els.info].forEach(e => root.appendChild(e));
   els.stage.appendChild(els.quiz);
   coach = Ui.coach(els.coach);
-  bv = new BoardView(els.stage, { canGrab: canGrab, onGrab: onGrab, onTap: onTap, onDrop: onDrop, isTarget: isTarget, prefer: prefer });
-  els.quiz.style.cssText = 'position:absolute;inset:0;align-content:center;z-index:5';
+  bv = Brett.neu(els.stage, { canGrab: canGrab, onGrab: onGrab, onTap: onTap, onDrop: onDrop, isTarget: isTarget, prefer: prefer });
+  els.quiz.style.cssText = 'position:absolute;left:0;top:0;right:0;bottom:0;align-content:center;z-index:5';
 }
 function open(lesson) {
-  mount(); Ui.show('scr-lektion');
+  mount();
+  if (bv.istDrei !== Brett.drei()) {   /* in den Einstellungen wurde zwischen 3D und flach umgeschaltet */
+    const neu = h('div', { id: 's-stage' });
+    if (bv.destroy) bv.destroy();
+    els.stage.replaceWith(neu); els.stage = neu; neu.appendChild(els.quiz);
+    bv = Brett.neu(neu, { canGrab: canGrab, onGrab: onGrab, onTap: onTap, onDrop: onDrop, isTarget: isTarget, prefer: prefer });
+  }
+  Ui.show('scr-lektion');
   Look.apply(); Look.dress(bv);
   L = { lesson: lesson, i: 0, marks: [], errs: 0 };
   task(0, true);
@@ -3124,10 +3201,10 @@ function header() {
   const l = L.lesson;
   let dots = '<span class="fortschritt">';
   l.tasks.forEach((t, i) => { dots += '<i class="' + (i < L.i ? 'da' : i === L.i ? 'jetzt' : '') + '"></i>'; });
-  els.top.innerHTML = '<div class="kopf t' + l.art[0] + '">' + Art.piece(l.art[0], l.art[1], '') + '</div><div class="wer"><div class="name">' + l.n + '</div><div class="beute">' + dots + '</span></div></div>';
+  els.top.innerHTML = '<div class="kopf t' + l.art[0] + (bv.istDrei ? ' k3' : '') + '">' + Ui.fig(l.art[0], l.art[1], '', 96) + '</div><div class="wer"><div class="name">' + l.n + '</div><div class="beute">' + dots + '</span></div></div>';
   let info = '';
   if (T && T.type === 'star') info = '<div class="wer"><div class="name">Züge: ' + T.n + '</div><div class="beute">Geht das in ' + T.par + (T.par === 1 ? ' Zug?' : ' Zügen?') + '</div></div>';
-  else if (T && T.type === 'fen') info = '<div class="wer"><div class="name">' + (T.goal === 'matt' ? 'Schachmatt in einem Zug' : 'Rette den König') + '</div></div>';
+  else if (T && T.type === 'fen') info = '<div class="wer"><div class="name">' + (T.goal === 'matt' ? 'Schachmatt in einem Zug' : T.goal === 'rochade' ? 'Mach den Zaubertrick' : 'Rette den König') + '</div></div>';
   else info = '<div class="wer"><div class="name">Wer ist mehr wert?</div></div>';
   els.info.innerHTML = info;
 }
@@ -3172,7 +3249,35 @@ function task(i, first) {
     if (!text) text = Txt.starGo;
   }
   header();
+  if (t.demo && t.fen) { demo(first ? l.intro : '', t.say); return; }
   coach.say(first ? [l.intro, t.say] : [text], { speak: true });
+}
+/* Erst zeigen, dann selbst machen: Elo macht den Zaubertrick vor, dann ist das Kind dran. */
+const isCastle = m => C.mFlag(m) === C.F_OO || C.mFlag(m) === C.F_OOO;
+function castleInfo(pos, m) {
+  const from = C.mFrom(m), to = C.mTo(m);
+  return { from: from, to: to, capSq: -1, rook: C.mFlag(m) === C.F_OO ? [to + 1, to - 1] : [to - 2, to + 1], promo: null, fast: false };
+}
+function demo(vorher, danach) {
+  const mine = tok, m = T.pos.legal().find(isCastle);
+  if (!m) { coach.say([vorher, danach], { speak: true }); return; }
+  bv.locked = true;
+  const zeig = () => {
+    if (mine !== tok) return;
+    const info = castleInfo(T.pos, m);
+    bv.setMarks('hint', [[info.from, 'm-hint'], [info.to, 'm-hint']]);
+    let n = 0;
+    const loop = () => {
+      if (mine !== tok) return;
+      bv.preview(info.from, info.to, info.rook);
+      setTimeout(() => { if (mine !== tok) return; bv.unpreview(); if (++n < 2) setTimeout(loop, 700); }, 1700);
+    };
+    loop();
+    coach.say(Txt.rochadeZeig, { speak: true, then() {
+      setTimeout(() => { if (mine !== tok) return; bv.unpreview(); bv.setMarks('hint', null); bv.locked = false; coach.say(danach, { speak: true }); }, n >= 2 ? 300 : 1500);
+    } });
+  };
+  if (vorher) coach.say(vorher, { speak: true, actions: [{ label: 'Zeig mal!', icon: 'auge', fn: zeig }] }); else zeig();
 }
 
 /* ---------- Stern-Aufgaben ---------- */
@@ -3255,7 +3360,7 @@ function pick(sq) {
 }
 function fenMove(m, fast) {
   const pos = T.pos, mine = tok, us = pos.side, from = C.mFrom(m), to = C.mTo(m), type = pos.b[from] & 7;
-  const info = { from: from, to: to, capSq: C.mCap(m) ? to : -1, rook: null, promo: C.mPromo(m) ? ' pnbrqk'[C.mPromo(m)] : null, fast: fast };
+  const info = isCastle(m) ? castleInfo(pos, m) : { from: from, to: to, capSq: C.mCap(m) ? to : -1, rook: null, promo: C.mPromo(m) ? ' pnbrqk'[C.mPromo(m)] : null, fast: fast };
   const wasChecker = C.mCap(m) && pos.attacked(pos.king[us], us ^ 1) && isChecker(pos, to);
   bv.locked = true; bv.setMarks('sel', null); bv.select(-1); bv.setMarks('hint', null); bv.setArrows('hint', null); bv.setPillars(null); bv.setMarks('check', null); bv.unflag('fear');
   if (info.capSq < 0) Sys.play('move');
@@ -3267,6 +3372,18 @@ function fenMove(m, fast) {
     if (T.goal === 'raus') {
       T.done = true;
       passed(L.errs ? 2 : 3, wasChecker ? Txt.out.schnappen : type === C.K ? Txt.out.schleichen : Txt.out.schuetzen);
+      return;
+    }
+    if (T.goal === 'rochade') {
+      if (isCastle(m)) { T.done = true; passed(L.errs === 0 ? 3 : L.errs < 3 ? 2 : 1, Txt.rochadeGut); return; }
+      L.errs++; Sys.play('bad');
+      coach.say(Txt.rochadeFalsch, { speak: true });
+      setTimeout(() => {
+        if (mine !== tok) return;
+        T.pos = new C.Position(T.fen); T.sel = -1; T.targets = {};
+        bv.clearAll(); bv.sync(BoardView.fromPos(T.pos)); bv.locked = false;
+        if (L.errs >= 2) { const c = T.pos.legal().find(isCastle); if (c) bv.setMarks('hint', [[C.mFrom(c), 'm-hint'], [C.mTo(c), 'm-hint']]); }
+      }, 2600);
       return;
     }
     if (mate) {
@@ -3318,6 +3435,7 @@ function finish() {
   let sum = 0; for (let i = 0; i < n; i++) sum += L.marks[i] || 1;
   const stars = Math.max(1, Math.min(3, Math.round(sum / n))), before = S.school[l.id] || 0, firstTime = !before;
   S.school[l.id] = Math.max(before, stars);
+  S.know[l.id] = 1; if (l.id === 'dreis') S.know.schach = 1; if (l.id === 'matt1') S.know.matt = 1;
   Sys.save(); Sys.play('win'); Ui.confetti(60);
   const idx = D.LESSONS.indexOf(l), next = D.LESSONS[idx + 1];
   const zeile = h('div', { class: 'zeile' });
@@ -3344,7 +3462,7 @@ function hint() {
   }
   if (T.type === 'fen') {
     let m = 0;
-    if (T.goal === 'matt') { const s = C.matesInOne(T.pos); m = s[0] || 0; } else { const l = T.pos.legal(); m = l.find(x => C.mCap(x)) || l[0] || 0; }
+    if (T.goal === 'matt') { const s = C.matesInOne(T.pos); m = s[0] || 0; } else if (T.goal === 'rochade') m = T.pos.legal().find(isCastle) || 0; else { const l = T.pos.legal(); m = l.find(x => C.mCap(x)) || l[0] || 0; }
     if (!m) return;
     T.stage++;
     if (T.stage === 1) { bv.setMarks('hint', [[C.mFrom(m), 'm-hint']]); coach.say(Txt.hintFen1, { speak: true }); }
@@ -3415,7 +3533,17 @@ function mount() {
   els.btns = h('div', { class: 'g-btns a-btns' }, els.hint, els.undo, els.menu);
   [els.stage, els.top, els.coach, els.btns, els.bot].forEach(e => root.appendChild(e));
   coach = Ui.coach(els.coach);
-  bv = new BoardView(els.stage, { canGrab: canGrab, onGrab: onGrab, onTap: onTap, onDrop: onDrop, isTarget: isTarget, prefer: prefer });
+  bv = Brett.neu(els.stage, { canGrab: canGrab, onGrab: onGrab, onTap: onTap, onDrop: onDrop, isTarget: isTarget, prefer: prefer });
+}
+/* Zwischen 3D-Brett und flachem Brett umschalten: Bühne neu aufbauen und die Stellung wieder hinstellen */
+function rebuild() {
+  if (!els || bv.istDrei === Brett.drei()) return;
+  const alt = els.stage, neu = h('div', { id: 'g-stage' }), flip = bv.flip, turned = bv.turned;
+  if (bv.destroy) bv.destroy();
+  alt.replaceWith(neu); els.stage = neu;
+  bv = Brett.neu(neu, { canGrab: canGrab, onGrab: onGrab, onTap: onTap, onDrop: onDrop, isTarget: isTarget, prefer: prefer });
+  Look.dress(bv); bv.setFlip(flip); bv.turned = turned;
+  if (G) { G.sel = -1; G.targets = {}; bv.sync(BoardView.fromPos(G.pos)); bv.locked = busy || !humanTurn() || G.over; if (G.moves.length) { const u = G.moves[G.moves.length - 1]; bv.setMarks('last', [[C.sqFrom(u.slice(0, 2)), 'm-last'], [C.sqFrom(u.slice(2, 4)), 'm-last']]); } }
 }
 
 const humanTurn = () => G.mode === 'duo' || G.pos.side === G.human;
@@ -3489,10 +3617,10 @@ function renderStrips() {
     else if (col === G.human) { name = 'Du'; zug = 'Du bist dran!'; }
     else { name = 'Computer'; zug = 'denkt<span class="denkt"><i></i><i></i><i></i></span>'; }
     const other = col ? 'u' : 'd';
-    const beute = G.caps[col].slice().sort((a, b) => b - a).map(t => '<span class="t' + other + '" style="display:inline-block">' + Art.piece(other, KIND[t], '') + '</span>').join('');
+    const beute = G.caps[col].slice().sort((a, b) => b - a).map(t => '<span class="klein">' + Ui.fig(other, KIND[t], '', 96) + '</span>').join('');
     el.className = 'strip ' + (isTop ? 'a-top' : 'a-bot') + (dran ? ' dran' : '');
     const rang = !duo() && col !== G.human && !beute ? Ui.stars(G.level, 4) : '';
-    el.innerHTML = '<div class="kopf t' + team.id + '">' + Art.piece(team.id, 'k', '') + '</div><div class="wer"><div class="name">' + name + '</div><div class="beute">' + rang + beute + (lead > 0 ? '<b>+' + lead + '</b>' : '') + '</div></div><span class="zug">' + zug + '</span>';
+    el.innerHTML = '<div class="kopf t' + team.id + (bv.istDrei ? ' k3' : '') + '">' + Ui.fig(team.id, 'k', '', 96) + '</div><div class="wer"><div class="name">' + name + '</div><div class="beute">' + rang + beute + (lead > 0 ? '<b>+' + lead + '</b>' : '') + '</div></div><span class="zug">' + zug + '</span>';
   };
   fill(els.top, topCol, true); fill(els.bot, botCol, false);
 }
@@ -3506,6 +3634,7 @@ function renderButtons() {
 function deselect() {
   G.sel = -1; G.targets = {};
   bv.select(-1); bv.setMarks('sel', null);
+  if (bv.tag) bv.tag(-1);
 }
 
 /* ---------- Ein neuer Zug beginnt ---------- */
@@ -3542,13 +3671,19 @@ function intro(st, note) {
   if (st.check) {
     bv.setArrows('check', checkers(pos).map(s => ({ from: s, to: pos.king[me], cls: 'red' })));
     if (helpful) { const seen = {}, marks = []; st.legal.forEach(m => { const f = C.mFrom(m); if (!seen[f]) { seen[f] = 1; marks.push([f, 'm-help']); } }); bv.setMarks('nudge', marks); }
-    coach.say([note, Txt.check(two, me, helpful)], { speak: true });
+    const K = Sys.S.know, first = !K.schach;
+    if (first) { K.schach = 1; Sys.save(); }
+    coach.say([note, Txt.check(two, me, helpful, first, !!Sys.S.school.dreis)], { speak: true });
     G.keep = false;
     return;
   }
   if (G.keep) { G.keep = false; if (!G.moves.length) return; }
   if (much) {
-    if (C.matesInOne(pos).length) { coach.say([note, Txt.mateChance(two, me)], { speak: true }); return; }
+    if (C.matesInOne(pos).length) {
+      const K = Sys.S.know, first = !K.matt && !Sys.S.school.matt1;
+      if (first) { K.matt = 1; Sys.save(); }
+      coach.say([note, Txt.mateChance(two, me, first)], { speak: true }); return;
+    }
     const th = C.threatTo(pos, me);
     if (th.gain >= 280) {
       const v = C.mTo(th.move), type = pos.b[v] & 7, again = G.lastThreat === v;
@@ -3559,14 +3694,76 @@ function intro(st, note) {
     }
     G.lastThreat = -1;
     if (C.bestCapture(pos).gain >= 280) { coach.say([note, Txt.freeCap(two)], { speak: true }); return; }
-    if (!note && G.turns > 2 && G.turns % 4 === 0) {
-      const S = Sys.S, i = (S.seen.tipp || 0) % D.TIPS.length;
-      S.seen.tipp = i + 1;
-      coach.say(Txt.tip(i), { speak: true });
-      return;
-    }
+    if (!note && offerCastle(st)) return;
+    if (!note && G.turns >= 2) { const id = idea(st); if (id) { bv.setMarks('nudge', id.marks); bv.setArrows('nudge', id.arrows || null); coach.say(id.text, { speak: true }); return; } }
   }
   coach.say([note, Txt.turn(two, me)], { speak: !!note || G.moves.length === 1 });
+}
+
+/* ---------- Elos Ideen: immer etwas Sichtbares auf dem Brett, nie ein unerklärtes Wort ---------- */
+function idea(st) {
+  const pos = G.pos, me = pos.side, S = Sys.S, mine = Math.floor(G.moves.length / 2);
+  if (G.ideaAt != null && G.turns - G.ideaAt < 3) return null;
+  const use = (key, max) => { if ((S.seen[key] || 0) >= max || G['i_' + key]) return false; return true; };
+  const done = (key, o) => { S.seen[key] = (S.seen[key] || 0) + 1; G['i_' + key] = 1; G.ideaAt = G.turns; Sys.save(); return o; };
+  const home = me ? 7 : 0, fwd = me ? -16 : 16;
+  /* 1. Am Anfang: ein Bauer in die Mitte */
+  if (mine <= 2 && use('iMitte', 3)) {
+    const marks = [], arrows = [];
+    [3, 4].forEach(f => { const from = f + (home + (me ? -1 : 1)) * 16, to = from + 2 * fwd, m = st.legal.find(x => C.mFrom(x) === from && C.mTo(x) === to); if (m && C.squareLoss(pos, m) < 90) { marks.push([from, 'm-help']); arrows.push({ from: from, to: to, cls: 'green' }); } });
+    const moved = [3, 4].some(f => (pos.b[f + (home + (me ? -1 : 1)) * 16] & 7) !== C.P);
+    if (marks.length && !moved) return done('iMitte', { text: Txt.ideaMitte, marks: marks, arrows: arrows });
+  }
+  /* 2. Springer und Läufer rausholen */
+  if (mine >= 2 && mine <= 9 && use('iRaus', 4)) {
+    const marks = [];
+    for (let f = 0; f < 8; f++) { const sq = f + home * 16, pc = pos.b[sq]; if (pc && (pc >> 3) === me && ((pc & 7) === C.N || (pc & 7) === C.B) && st.legal.some(m => C.mFrom(m) === sq && C.squareLoss(pos, m) < 90)) marks.push([sq, 'm-help']); }
+    if (marks.length >= 2) return done('iRaus', { text: Txt.ideaRaus, marks: marks });
+  }
+  /* 3. Ein Bauer kurz vor dem Ziel */
+  if (use('iZiel', 4)) {
+    const m = st.legal.find(x => (pos.b[C.mFrom(x)] & 7) === C.P && !C.mCap(x) && (me ? (C.mTo(x) >> 4) <= 1 : (C.mTo(x) >> 4) >= 6) && C.squareLoss(pos, x) < 90);
+    if (m) return done('iZiel', { text: Txt.ideaZiel, marks: [[C.mFrom(m), 'm-help']], arrows: [{ from: C.mFrom(m), to: C.mTo(m), cls: 'green' }] });
+  }
+  return null;
+}
+/* ---------- Der Zaubertrick (Rochade): Elo zeigt ihn erst, bevor er ihn empfiehlt ---------- */
+const isCastle = m => C.mFlag(m) === C.F_OO || C.mFlag(m) === C.F_OOO;
+function offerCastle(st) {
+  if (G.castleSaid || G.moves.length < 6) return false;
+  const m = st.legal.find(x => C.mFlag(x) === C.F_OO) || st.legal.find(isCastle);
+  if (!m || C.judge(G.pos, m)) return false;
+  G.castleSaid = true;
+  const two = duo(), me = G.pos.side;
+  if (Sys.S.know.rochade) { pointCastle(m); coach.say(Txt.castleNow, { speak: true }); return true; }
+  coach.say(Txt.castleOffer, { speak: true, actions: [
+    { label: 'Zeig mal!', icon: 'auge', fn() { if (G && !busy && !G.pending && humanTurn() && G.pos.find(C.uci(m)) === m) teachCastle(m); } },
+    { label: 'Später', cls: 'white', fn() { if (G) coach.say(Txt.turn(two, me)); } }
+  ] });
+  return true;
+}
+function pointCastle(m) {
+  const from = C.mFrom(m), to = C.mTo(m);
+  bv.setMarks('hint', [[from, 'm-hint'], [to, 'm-hint']]); bv.setArrows('hint', [{ from: from, to: to }]); bv.setPillars([to], '#ffe14d');
+}
+/* Vormachen, ohne zu ziehen: König und Turm gleiten hin und wieder zurück */
+function teachCastle(m) {
+  const info = moveInfo(G.pos, m), mine = tok;
+  deselect(); bv.setMarks('nudge', null); bv.setArrows('nudge', null); bv.setMarks('hint', null); bv.setArrows('hint', null); bv.setPillars(null);
+  Sys.S.know.rochade = 1; Sys.save();
+  bv.locked = true;
+  let n = 0;
+  const loop = () => {
+    if (mine !== tok || !G) return;
+    bv.preview(info.from, info.to, info.rook);
+    setTimeout(() => { if (mine !== tok || !G) return; bv.unpreview(); if (++n < 2) setTimeout(loop, 700); }, 1700);
+  };
+  loop();
+  coach.say(Txt.castleShow, { speak: true, then() {
+    if (mine !== tok || !G) return;
+    const go = () => { if (mine !== tok || !G) return; bv.unpreview(); bv.locked = false; pointCastle(m); coach.say(Txt.castleDo, { speak: true }); };
+    setTimeout(go, n >= 2 ? 0 : 1200);
+  } });
 }
 
 /* ---------- Tippen und Ziehen ---------- */
@@ -3602,6 +3799,7 @@ function select(sq) {
     marks.push([+to, cap ? (risky ? 'm-dcap' : 'm-cap') : (risky ? 'm-dmv' : 'm-mv')]);
   }
   bv.setMarks('sel', marks); bv.select(sq);
+  if (bv.tag) bv.tag(sq, D.PIECE[type].n);
   Sys.play('pick');
   describe(type, moves.length, danger);
 }
@@ -3704,7 +3902,7 @@ function remark(mover, cap, flag, promo) {
   if (promo) return Txt.promo(who, promo);
   if (flag === C.F_EP) return Txt.ep(who);
   if (cap) return Txt.cap(who, cap);
-  if (flag === C.F_OO || flag === C.F_OOO) return Txt.castle(who);
+  if (flag === C.F_OO || flag === C.F_OOO) { const K = Sys.S.know, kennt = !!K.rochade; if (!kennt) { K.rochade = 1; Sys.save(); } return Txt.castle(who, kennt); }
   return '';
 }
 function botMove() {
@@ -3741,6 +3939,8 @@ function showHint(stage) {
     bv.setMarks('hint', [[from, 'm-hint']]); bv.setPillars([from], '#ffe14d');
     coach.say(Txt.hint1, { speak: true, actions: [{ label: 'Zeig mir, wohin', icon: 'auge', fn() { if (G && G.hint && G.hint.m === m && !busy) showHint(2); } }] });
   } else {
+    /* Der beste Zug ist der Zaubertrick, aber das Kind kennt ihn noch nicht: erst vormachen */
+    if (isCastle(m) && !Sys.S.know.rochade) { teachCastle(m); return; }
     bv.setMarks('hint', [[from, 'm-hint'], [to, 'm-hint']]); bv.setArrows('hint', [{ from: from, to: to }]); bv.setPillars([to], '#ffe14d');
     coach.say(Txt.why(C.explain(G.pos, m)), { speak: true });
   }
@@ -3771,7 +3971,7 @@ function finish(st) {
     const w = st.winner, l = w ^ 1, wt = w ? 'd' : 'u';
     team = w;
     bv.flag(G.pos.king[l], 'ko');
-    for (const s in bv.pcs) { const el = bv.pcs[s]; if (el._team === wt) { el.style.setProperty('--bd', (-Math.random() * 0.4).toFixed(2) + 's'); el.style.setProperty('--jr', (Sys.rnd(17) - 8) + 'deg'); bv.mark(el, 'joy'); } }
+    for (const s in bv.pcs) { const el = bv.pcs[s]; if (el._team === wt) { if (el.style) { el.style.setProperty('--bd', (-Math.random() * 0.4).toFixed(2) + 's'); el.style.setProperty('--jr', (Sys.rnd(17) - 8) + 'deg'); } bv.mark(el, 'joy'); } }
     if (two) { won = true; n = 1; kind = 'win'; }
     else if (w === G.human) { won = true; n = D.LEVELS[G.level].gifts; kind = 'win'; }
     else kind = 'lose';
@@ -3844,7 +4044,7 @@ function leave() {
   App.menu();
 }
 /* Aussehen hat sich geändert (Einstellungen): Brett neu anziehen */
-function refresh() { if (bv) { Look.apply(); Look.dress(bv); } }
+function refresh() { if (bv) { Look.apply(); rebuild(); Look.dress(bv); if (G) renderStrips(); } }
 
 /* ---------- Kleine Sprüche der Figuren ---------- */
 const EMO_OWN = ['Ich! Ich!', 'Nimm mich!', 'Hier!', 'Los!', 'Juhu!'], EMO_FOE = ['Hihi!', 'Gähn …', 'La la la', 'Huhu!', 'Na los!', 'Hmm …'];
@@ -3912,10 +4112,10 @@ function menu() {
   if (S.save && S.save.moves && S.save.moves.length) tile('breit', 'los', 'Weiterspielen', S.save.mode === 'duo' ? 'Euer Spiel zu zweit wartet noch' : 'Dein Spiel gegen den Computer wartet noch', () => Game.start(S.save));
   tile('t1', 'computer', 'Gegen den Computer', 'Gewinne Geschenke!', setupBot);
   tile('t2', 'zwei', 'Zu zweit', 'Einhörner gegen Dinos', setupDuo);
-  tile('t3', 'schule', 'Schach-Schule', 'Lerne alle Figuren kennen', () => School.list());
+  tile('t3' + (Object.keys(S.school).length ? '' : ' start'), 'schule', 'Schach-Schule', 'Lerne alle Figuren kennen', () => School.list());
   tile('t4', 'geschenk', 'Schatzkiste', S.gifts.length + ' von ' + D.GIFTS.length + ' Geschenken', () => Gift.chest());
   scr.appendChild(h('div', { class: 'm-mitte' },
-    h('div', { class: 'held' }, h('div', { class: 'held-in', html: '<div class="boden"></div><div class="fig l">' + Ui.fig('u', 'k') + '</div><div class="fig r">' + Ui.fig('d', 'k') + '</div><div class="fee">' + Art.svg(Art.ELEFANT, '0 0 120 110') + '</div>' })),
+    h('div', { class: 'held' }, h('div', { class: 'held-in', html: '<div class="boden"></div><div class="fig l">' + Ui.fig('u', 'k', null, 512) + '</div><div class="fig r">' + Ui.fig('d', 'k', null, 512) + '</div><div class="fee">' + Art.svg(Art.ELEFANT, '0 0 120 110') + '</div>' })),
     tiles));
   const fuss = h('footer', { class: 'm-fuss' });
   if (onSite()) fuss.appendChild(h('a', { class: 'btn white small', href: '../index.html', html: Art.ICON.pfeil + '<span>Alle Spiele</span>' }));
@@ -3932,12 +4132,14 @@ function setupBot() {
   let level = S.last.level || 1, human = S.last.human ? 1 : 0;
   const lv = [1, 2, 3, 4].map(n => ({ v: n, html: Ui.stars(n, 4) + D.LEVELS[n].n + '<small>' + D.LEVELS[n].sub + '</small>' + Ui.gifts(D.LEVELS[n].gifts) }));
   const who = [{ v: 0, html: '<span class="bild">' + Ui.fig('u', 'n') + '</span>Einhörner<small>fangen an</small>' }, { v: 1, html: '<span class="bild">' + Ui.fig('d', 'n') + '</span>Dinos' }];
+  const neu = !Object.keys(S.school).length;
   const sh = Ui.sheet('Gegen den Computer', [
+    neu ? h('div', { class: 'hinweis' }, h('span', { text: 'Neu beim Schach? In der Schach-Schule zeigt Elo dir zuerst alle Figuren.' }), Ui.btn('Zur Schach-Schule', 'schule', 'mint small', () => { sh.close(); School.list(); })) : null,
     h('h3', { text: 'Wie schwer soll es sein?' }), Ui.choice(lv, level, v => { level = v; }, 'c2'),
     h('h3', { text: 'Wer möchtest du sein?' }), Ui.choice(who, human, v => { human = v; }, 'c2'),
     h('div', { class: 'zeile' }, Ui.btn('Los!', 'los', '', () => { S.last.level = level; S.last.human = human; Sys.save(); sh.close(); Game.start({ mode: 'bot', level: level, human: human, help: D.LEVELS[level].help }); }))
   ], { onClose() { Sys.hush(); } });
-  Sys.speak(Txt.setupBot);
+  Sys.speak(neu ? Txt.setupNeu : Txt.setupBot);
 }
 function setupDuo() {
   const S = Sys.S;
@@ -3957,7 +4159,7 @@ function settings() {
   if (Sys.canSpeak) out.push(Ui.toggle('Vorlesen', 'vorlesen', () => S.set.voice, v => { S.set.voice = v; Sys.save(); if (v) Sys.speak(Txt.voiceOn); else Sys.hush(); }));
   out.push(Ui.toggle('Töne', 'ton', () => S.set.sound, v => { S.set.sound = v; Sys.save(); }));
   out.push(Ui.toggle('Brett in 3D', 'auge', () => !S.set.flat, v => { S.set.flat = !v; Sys.save(); Game.refresh(); }));
-  out.push(Ui.toggle('Echte Schach-Zeichen an den Figuren', 'frage', () => S.set.symbols, v => { S.set.symbols = v; Sys.save(); Game.refresh(); }));
+  if (!Brett.drei()) out.push(Ui.toggle('Echte Schach-Zeichen an den Figuren', 'frage', () => S.set.symbols, v => { S.set.symbols = v; Sys.save(); Game.refresh(); }));
   return out;
 }
 
@@ -3967,7 +4169,7 @@ function figures() {
   [6, 5, 4, 3, 2, 1].forEach(t => {
     const p = D.PIECE[t], text = Txt.figure(t);
     const row = h('div', { class: 'figur' },
-      h('div', { class: 'paar', html: '<span class="tu">' + Art.piece('u', p.k, '') + '</span><span class="td">' + Art.piece('d', p.k, '') + '</span>' }),
+      h('div', { class: 'paar', html: '<span>' + Ui.fig('u', p.k, '', 192) + '</span><span>' + Ui.fig('d', p.k, '', 192) + '</span>' }),
       h('div', null, h('b', { html: p.n + ' <span class="echt" title="So sieht die Figur im echten Schach aus">' + Art.CLASSIC[p.k] + '</span>' + (p.pts ? '<em>' + p.pts + (p.pts === 1 ? ' Punkt' : ' Punkte') + '</em>' : '') }), h('p', { text: p.how })),
       Ui.btn('', 'ton', 'white round small', () => Sys.speak(text), p.n + ' vorlesen'));
     box.appendChild(row);
