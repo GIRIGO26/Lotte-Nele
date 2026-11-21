@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Creepster&family=Gochi+Hand&family=Grandstander:wght@700;900&family=MedievalSharp&display=swap">
 <style>
-/* Layout: Kopf mit Nachthimmel, Mond und Burgsilhouette; darunter hängen die drei Spiele wie Bilder im Burghof
-   (drei Spalten am Computer, eine Spalte am Handy). Bewusst nur ein Look: Nacht über der Burg. */
+/* Layout: Kopf mit Nachthimmel, Mond und Burgsilhouette; darunter hängen die vier Spiele wie Bilder im Burghof
+   (zwei Spalten am Computer und Tablet, eine Spalte am Handy). Bewusst nur ein Look: Nacht über der Burg. */
 :root {
   --night: #15112d;
   --court: #19142f;
@@ -59,8 +59,9 @@ h1 { margin: 2px 0 6px; font-family: var(--display); font-weight: 900; font-size
 .castle { display: block; width: 100%; height: auto; margin-top: 26px; }
 
 /* ---------- Spiele ---------- */
-main { max-width: 1160px; margin: 0 auto; padding-inline: 20px; padding-block: 8px 40px; }
-.games { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 28px; }
+main { max-width: 1040px; margin: 0 auto; padding-inline: 20px; padding-block: 8px 40px; }
+.games { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+@media (min-width: 640px) { .games { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .game { position: relative; display: flex; flex-direction: column; min-width: 0; background: var(--tint); border-radius: 22px; overflow: hidden; box-shadow: 0 0 0 2px rgba(255, 255, 255, .06), 0 18px 40px rgba(0, 0, 0, .35); transition: transform .18s ease, box-shadow .18s ease; }
 .game:hover { transform: translateY(-4px); box-shadow: 0 0 0 2px var(--accent), 0 24px 48px rgba(0, 0, 0, .45); }
 .shot { display: block; aspect-ratio: 16 / 10; max-width: 100%; overflow: hidden; background: #000; }
@@ -71,7 +72,8 @@ main { max-width: 1160px; margin: 0 auto; padding-inline: 20px; padding-block: 8
 .t-hum { font-family: "Grandstander", system-ui, sans-serif; font-weight: 900 !important; font-size: 34px; }
 .t-burg { font-family: "MedievalSharp", Georgia, serif; font-size: 36px; }
 .t-kuerbis { font-family: "Creepster", "Grandstander", system-ui, sans-serif; font-size: 40px; letter-spacing: .02em; }
-.t-kuerbis small { display: block; font-family: var(--body); font-weight: 700; font-size: 16px; letter-spacing: 0; color: var(--mist); margin-top: 4px; }
+.t-schach { font-family: "Grandstander", system-ui, sans-serif; font-weight: 900 !important; font-size: 33px; }
+.t-schach small, .t-kuerbis small { display: block; font-family: var(--body); font-weight: 700; font-size: 16px; letter-spacing: 0; color: var(--mist); margin-top: 4px; }
 .by { margin: 0; align-self: flex-start; font-family: var(--hand); font-size: 30px; line-height: 1; color: var(--accent); transform: rotate(-4deg); transform-origin: left center; padding-bottom: 4px; background: no-repeat left bottom / 100% 8px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 8'%3E%3Cpath d='M2 6c20-4 40-4 58-2s38 1 58-3' fill='none' stroke='%23ffffff' stroke-opacity='.55' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E"); }
 .desc { margin: 0; color: var(--moon); }
 .tags { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
@@ -83,8 +85,9 @@ main { max-width: 1160px; margin: 0 auto; padding-inline: 20px; padding-block: 8
 .hum { --tint: #3b2556; --accent: #ffcc33; --accent-deep: #b8860b; --on-accent: #2a1747; --title: #f1d9ff; }
 .burg { --tint: #1c2943; --accent: #f2c14e; --accent-deep: #9a7420; --on-accent: #2b1d12; --title: #f4e6c6; }
 .kuerbis { --tint: #301a3c; --accent: #ff8a1f; --accent-deep: #a8510a; --on-accent: #2a1606; --title: #ff9a3c; }
+.schach { --tint: #2c2466; --accent: #ff7ab8; --accent-deep: #b03a7c; --on-accent: #2a1036; --title: #ffd9ec; }
 
-footer { max-width: 1160px; margin: 0 auto; padding-inline: 20px; padding-block: 8px 44px; display: flex; flex-wrap: wrap; gap: 8px 22px; justify-content: space-between; color: var(--mist); font-size: 15px; }
+footer { max-width: 1040px; margin: 0 auto; padding-inline: 20px; padding-block: 8px 44px; display: flex; flex-wrap: wrap; gap: 8px 22px; justify-content: space-between; color: var(--mist); font-size: 15px; }
 footer p { margin: 0; }
 footer .sig { font-family: var(--hand); font-size: 22px; color: var(--moon); }
 @media (max-width: 560px) { .sky { padding-block: 40px 0; } .moon { width: 64px; height: 64px; top: 22px; } .bat.b1 { top: 84px; right: 92px; width: 26px; } .bat.b2 { top: 36px; right: 30px; width: 38px; } .body { padding: 16px 16px 20px; } }
@@ -100,7 +103,7 @@ footer .sig { font-family: var(--hand); font-size: 22px; color: var(--moon); }
   <div class="intro">
     <p class="kicker">Willkommen in der</p>
     <h1>Spieleburg</h1>
-    <p class="lede">Drei Spiele, ausgedacht von <b>Nele</b> und <b>Lotte</b>. Such dir eins aus!</p>
+    <p class="lede">Vier Spiele, ausgedacht von <b>Nele</b> und <b>Lotte</b>. Such dir eins aus!</p>
     <p class="howto"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M3 7h18v10H3z"/><path fill="currentColor" d="M6 10h2v2H6zM9 10h2v2H9zM12 10h2v2h-2zM15 10h3v2h-3zM7 13h10v2H7z"/></svg>Am Computer mit den Pfeiltasten, auf dem Tablet mit dem Finger</p>
   </div>
   <svg class="castle" viewBox="0 -22 1200 192" aria-hidden="true">
@@ -135,13 +138,23 @@ footer .sig { font-family: var(--hand); font-size: 22px; color: var(--moon); }
     </li>
     <li class="game kuerbis">
       <a class="shot" href="kuerbisnacht/index.html" tabindex="-1" aria-hidden="true"><img src="bilder/kuerbisnacht.jpg" alt="" width="960" height="600"></a>
-      <span class="sticker" aria-hidden="true">Neu!</span>
       <div class="body">
         <h2 class="t-kuerbis">Kürbisnacht<small>auf Burg Mondstein</small></h2>
         <p class="by">von Lotte</p>
         <p class="desc">Kürbisse schnitzen, Torte backen, den Saal schmücken. Und dann zwei Wettbewerbe: Wer schnitzt den schönsten Kürbis, und wer findet den lieben Geist zuerst?</p>
         <ul class="tags"><li>3D</li><li>Halloween</li><li>Abzeichen</li></ul>
         <a class="play" href="kuerbisnacht/index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>Spielen</a>
+      </div>
+    </li>
+    <li class="game schach">
+      <a class="shot" href="schach/index.html" tabindex="-1" aria-hidden="true"><img src="bilder/schach.jpg" alt="" width="960" height="600"></a>
+      <span class="sticker" aria-hidden="true">Neu!</span>
+      <div class="body">
+        <h2 class="t-schach">Einhörner gegen Dinos<small>das Schachspiel</small></h2>
+        <p class="by">von Nele und Lotte</p>
+        <p class="desc">Schach mit Einhörnern und Dinos in 3D! Spiel gegen den Computer oder zu zweit. Elo, der Schach-Elefant, erklärt alles und liest es vor. Wer gewinnt, packt Geschenke aus.</p>
+        <ul class="tags"><li>Schach</li><li>Zu zweit</li><li>Geschenke</li></ul>
+        <a class="play" href="schach/index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>Spielen</a>
       </div>
     </li>
   </ul>
