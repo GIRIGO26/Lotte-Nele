@@ -494,6 +494,22 @@ svg.art{display:block;width:100%;height:100%;overflow:visible}
 .paket.auf{pointer-events:none;cursor:default}
 .ov.dunkel{background:rgba(22,9,52,.93)}
 
+/* ---------- Erklären auf dem Brett (Runde 4): rotes Kreuz, Wach-Pfeil, Schildchen, „nur ausgedacht“ ---------- */
+.blase.kurz{animation-duration:1.1s}
+.pkt.no{background:var(--red);box-shadow:0 0 calc(var(--sq)*.3) calc(var(--sq)*.05) rgba(255,90,77,.9);animation:auftauchen .16s cubic-bezier(.3,1.7,.5,1) backwards}
+.pkt.no::after{content:"✕";position:absolute;left:0;top:0;right:0;bottom:0;display:grid;place-items:center;font:700 calc(var(--sq)*.24)/1 var(--fd);color:#fff}
+.ar.orange{fill:#ff9f2e}
+.wertschild{transform:translate(-50%,-100%);min-width:1.5em;text-align:center;background:var(--sun);color:var(--ink);border:3px solid var(--ink);border-radius:99px;padding:.08em .4em;font:700 calc(var(--sq)*.42)/1.1 var(--fd);box-shadow:0 4px 0 var(--ink);animation:auftauchen .22s cubic-bezier(.3,1.7,.5,1) backwards;white-space:nowrap}
+/* Elo zeigt etwas, das nicht wirklich gezogen wird: ein leuchtender Rahmen und ein Schild sagen es deutlich */
+#g-stage::before{content:attr(data-schild);position:absolute;left:50%;top:10px;z-index:6;transform:translate(-50%,-140%);opacity:0;transition:transform .3s cubic-bezier(.3,1.5,.5,1),opacity .2s;pointer-events:none;
+  background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius:99px;padding:.3em .9em;font:700 clamp(.9rem,2.4vmin,1.15rem)/1 var(--fd);box-shadow:0 4px 0 var(--ink);white-space:nowrap}
+#g-stage::after{content:"";position:absolute;left:0;top:0;right:0;bottom:0;z-index:5;border-radius:22px;pointer-events:none;opacity:0;transition:opacity .25s;
+  box-shadow:inset 0 0 0 5px rgba(255,255,255,.85),inset 0 0 60px 18px rgba(120,190,255,.55)}
+.film #g-stage::before{transform:translate(-50%,0);opacity:1}
+.film #g-stage::after{opacity:1;animation:filmrahmen 1.4s ease-in-out infinite alternate}
+@keyframes filmrahmen{from{box-shadow:inset 0 0 0 5px rgba(255,255,255,.85),inset 0 0 60px 18px rgba(120,190,255,.5)}to{box-shadow:inset 0 0 0 5px rgba(255,255,255,.95),inset 0 0 80px 26px rgba(160,140,255,.6)}}
+@media (prefers-reduced-motion:reduce){.film #g-stage::after{animation:none}}
+
 </style>
 </head>
 <body>
@@ -507,7 +523,7 @@ svg.art{display:block;width:100%;height:100%;overflow:visible}
   <section class="screen game" id="scr-lektion" aria-label="Lektion"></section>
   <noscript><p style="padding:2em;font-size:1.3em">Für dieses Spiel muss JavaScript eingeschaltet sein.</p></noscript>
 </main>
-<script src="brett3d-6d1a3811.js"></script>
+<script src="brett3d-8424cf7e.js"></script>
 <script id="engine-src">
 /* =========================================================
    Schach-Maschine: Regeln, Zugliste, Computer-Gegner, Tipps.
@@ -636,6 +652,29 @@ PP.attacked = function (sq, by) {
     while (!(t & 0x88)) { const p = b[t]; if (p) { if (p === (R | c) || p === (Q | c)) return true; break; } t += d; }
   }
   return false;
+};
+/* Welche Figuren der Farbe `by` greifen das Feld an? (Liste der Felder – für die Erklärungen) */
+PP.attackers = function (sq, by) {
+  const b = this.b, c = by << 3, out = [];
+  let t;
+  if (by === 0) {
+    t = sq - 15; if (!(t & 0x88) && b[t] === P) out.push(t);
+    t = sq - 17; if (!(t & 0x88) && b[t] === P) out.push(t);
+  } else {
+    t = sq + 15; if (!(t & 0x88) && b[t] === (P | 8)) out.push(t);
+    t = sq + 17; if (!(t & 0x88) && b[t] === (P | 8)) out.push(t);
+  }
+  for (let i = 0; i < 8; i++) { t = sq + KN[i]; if (!(t & 0x88) && b[t] === (N | c)) out.push(t); }
+  for (let i = 0; i < 8; i++) { t = sq + KQ[i]; if (!(t & 0x88) && b[t] === (K | c)) out.push(t); }
+  for (let i = 0; i < 4; i++) {
+    const d = DG[i]; t = sq + d;
+    while (!(t & 0x88)) { const p = b[t]; if (p) { if (p === (B | c) || p === (Q | c)) out.push(t); break; } t += d; }
+  }
+  for (let i = 0; i < 4; i++) {
+    const d = OR[i]; t = sq + d;
+    while (!(t & 0x88)) { const p = b[t]; if (p) { if (p === (R | c) || p === (Q | c)) out.push(t); break; } t += d; }
+  }
+  return out;
 };
 PP.inCheck = function () { return this.attacked(this.king[this.side], this.side ^ 1); };
 
@@ -1192,7 +1231,7 @@ return {
   mFrom: mFrom, mTo: mTo, mPromo: mPromo, mFlag: mFlag, mCap: mCap,
   sqName: sqName, sqFrom: sqFrom, uci: uci,
   perft: perft, evaluate: evaluate, seeGain: seeGain, bestCapture: bestCapture, threatTo: threatTo,
-  squareLoss: squareLoss, matesInOne: matesInOne, isMate: isMate, judge: judge, explain: explain,
+  squareLoss: squareLoss, matesInOne: matesInOne, allowsMate: allowsMate, isMate: isMate, judge: judge, explain: explain, KQ: KQ,
   pickMove: pickMove, hint: hint, fromMoves: fromMoves, handle: handle
 };
 })();
@@ -1830,7 +1869,98 @@ const LESSONS = [
     ] }
 ];
 
-return { PIECE: PIECE, KIND: KIND, TEAM: TEAM, LEVELS: LEVELS, BOARDS: BOARDS, SKINS: SKINS, HATS: HATS, CARDS: CARDS, GIFTS: GIFTS, FIRST: FIRST, LESSONS: LESSONS };
+/* ---------- Elos Tipps vor dem Spiel ----------
+   Jeder Tipp ist ein kleiner Film auf dem Brett: gute Anfänge, starke Züge und was man wissen sollte.
+   Geschrieben aus Sicht der Einhörner. Spielt das Kind die Dinos, wird alles gespiegelt.
+   Eine Szene: fen (neue Stellung, sonst geht es weiter wie zuvor) · sag (das spricht Elo) ·
+   tu (das passiert dabei, der Reihe nach): 'e2e4' = Zug · 600 = warten (ms) ·
+     { pf: [[von, nach, farbe]] } Pfeile · { mk: [[feld, art]] } Felder · { pkt: [[feld, text]] } Zahl über einer Figur · { matt: 1 } zeigen, warum es matt ist
+   Die Reihenfolge geht vom Einfachen zum Schwierigen; nach dem letzten Tipp fängt es wieder vorn an. */
+const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+const TIPPS = [
+  { id: 'mitte', n: 'Ein Bauer in die Mitte', film: [
+    { fen: START_FEN, sag: 'Der beste Anfang: ein Bauer in die Mitte!', tu: ['e2e4'] },
+    { sag: 'So bekommen die Dame und der Läufer freie Bahn.', tu: [{ pf: [['d1', 'h5', 'green'], ['f1', 'a6', 'green']] }] }
+  ] },
+  { id: 'raus', n: 'Alle sollen mitspielen', film: [
+    { fen: START_FEN, sag: 'Hol am Anfang die Springer und die Läufer heraus.', tu: ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4'] },
+    { sag: 'Vorn können sie viel mehr als hinten!', tu: [{ mk: [['f3', 'm-help'], ['c4', 'm-help']] }] }
+  ] },
+  { id: 'wert', n: 'Was ist eine Figur wert?', film: [
+    { fen: '7k/8/8/8/8/1PNBRQ2/8/4K3 w - - 0 1', sag: 'Jede Figur ist Punkte wert: Bauer 1, Springer 3, Läufer 3, Turm 5 und Dame 9.', tu: [1700, { pkt: [['b3', '1']] }, 950, { pkt: [['c3', '3']] }, 950, { pkt: [['d3', '3']] }, 950, { pkt: [['e3', '5']] }, 950, { pkt: [['f3', '9']] }] },
+    { fen: '4k3/8/4p3/3p4/8/8/8/3QK3 w - - 0 1', sag: 'Tausche nie eine wertvolle Figur gegen eine billige!', tu: [500, { pkt: [['d1', '9'], ['d5', '1']] }, 1500, { pkt: [] }, 'd1d5', 'e6d5'] }
+  ] },
+  { id: 'schauen', n: 'Erst schauen, dann ziehen', film: [
+    { fen: 'rn1qkbnr/ppp1pppp/8/3p4/4P1b1/8/PPPPQPPP/RNB1KBNR w KQkq - 2 3', sag: 'Vor jedem Zug: Schau, was der Gegner gerade angreift!', tu: [400, { pf: [['g4', 'e2', 'red']], mk: [['e2', 'm-threat']] }] },
+    { sag: 'Hier ist es die Dame. Ein Bauer stellt sich einfach davor!', tu: [900, 'f2f3'] }
+  ] },
+  { id: 'dame', n: 'Die Dame wartet noch', film: [
+    { fen: START_FEN, sag: 'Lass die Dame am Anfang noch zu Hause!', tu: ['e2e4', 'e7e5', 'd1h5'] },
+    { sag: 'Sonst wird sie gejagt.', tu: ['b8c6', 'f1c4', 'g7g6', { pf: [['g6', 'h5', 'red']] }] },
+    { sag: 'Sie muss weglaufen, und der Gegner holt in Ruhe seine Figuren heraus.', tu: [{ pf: [] }, 'h5f3', 'g8f6'] }
+  ] },
+  { id: 'koenig', n: 'Der König in Sicherheit', film: [
+    { fen: 'r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4', sag: 'Bring deinen König früh in Sicherheit: mit dem Zaubertrick!', tu: [700, 'e1g1'] },
+    { sag: 'Hinter seinen Bauern ist er gut versteckt. Und der Turm darf mitspielen!', tu: [{ mk: [['f2', 'm-help'], ['g2', 'm-help'], ['h2', 'm-help']] }] }
+  ] },
+  { id: 'einmal', n: 'Jede Figur einmal', film: [
+    { fen: START_FEN, sag: 'Am Anfang zieht jede Figur nur einmal.', tu: ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4', 'f8c5', 'b1c3', 'g8f6'] },
+    { sag: 'So sind schnell alle im Spiel!', tu: ['d2d3', 'd7d6', { mk: [['f3', 'm-help'], ['c4', 'm-help'], ['c3', 'm-help']] }] }
+  ] },
+  { id: 'gabel', n: 'Die Gabel', film: [
+    { fen: 'r3k3/8/8/3N4/8/8/8/4K3 w - - 0 1', sag: 'Der Springer kann zwei Figuren auf einmal angreifen. Das heißt Gabel!', tu: [600, 'd5c7', { pf: [['c7', 'e8', 'red'], ['c7', 'a8', 'red']] }] },
+    { sag: 'Der König muss weglaufen, und du schnappst den Turm!', tu: [{ pf: [] }, 'e8d7', 'c7a8'] }
+  ] },
+  { id: 'italienisch', n: 'Die italienische Eröffnung', film: [
+    { fen: START_FEN, sag: 'So fangen viele Meister an: Bauer, Springer, Läufer.', tu: ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1c4'] },
+    { sag: 'Das heißt italienische Eröffnung. Eröffnung nennt man den Anfang beim Schach.', tu: [] },
+    { sag: 'Der Läufer schaut schon auf das Feld neben dem König!', tu: [{ pf: [['c4', 'f7', 'red']], mk: [['f7', 'm-threat']] }] }
+  ] },
+  { id: 'fenster', n: 'Ein Fenster für den König', film: [
+    { fen: '4r1k1/5ppp/8/8/8/8/5PPP/6K1 b - - 0 1', sag: 'Vorsicht! Hinter seinen Bauern kann der König eingesperrt sein.', tu: [800, 'e8e1', { matt: 1 }] },
+    { fen: '4r1k1/5ppp/8/8/8/8/5PPP/6K1 w - - 0 1', sag: 'Der Trick: Ein Bauer vor dem König geht ein Feld vor. Dann hat der König ein Fenster!', tu: [500, 'h2h3', 'e8e1', 'g1h2'] }
+  ] },
+  { id: 'schaefer', n: 'Das Schäfermatt', film: [
+    { fen: START_FEN, sag: 'Ein frecher Trick heißt Schäfermatt.', tu: ['e2e4', 'e7e5', 'f1c4', 'b8c6', 'd1h5'] },
+    { sag: 'Dame und Läufer zielen zusammen auf das Feld neben dem König.', tu: [{ pf: [['c4', 'f7', 'red'], ['h5', 'f7', 'red']], mk: [['f7', 'm-threat']] }] },
+    { sag: 'Passt der Gegner nicht auf, ist es Schachmatt!', tu: [{ pf: [], mk: [] }, 'g8f6', 'h5f7', { matt: 1 }] }
+  ] },
+  { id: 'abwehr', n: 'Das Schäfermatt abwehren', film: [
+    { fen: 'rnb1k1nr/pppp1ppp/8/2b1p3/2B1P2q/2N5/PPPP1PPP/R1BQK1NR w KQkq - 4 4', sag: 'Will jemand das Schäfermatt mit dir spielen? Schau, wohin Dame und Läufer zielen!', tu: [500, { pf: [['h4', 'f2', 'red'], ['c5', 'f2', 'red']], mk: [['f2', 'm-threat']] }] },
+    { sag: 'Deine Dame passt einfach mit auf das Feld auf.', tu: [{ pf: [] }, 'd1e2', { pf: [['e2', 'f2', 'green']] }] },
+    { sag: 'Und dann jagt dein Springer die Dame weg!', tu: [{ pf: [], mk: [] }, 'g8f6', 'g1f3', { pf: [['f3', 'h4', 'red']] }] }
+  ] },
+  { id: 'vierspringer', n: 'Das Vier-Springer-Spiel', film: [
+    { fen: START_FEN, sag: 'Ein lustiger Anfang: Alle vier Springer hüpfen heraus!', tu: ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'b1c3', 'g8f6'] },
+    { sag: 'Das heißt Vier-Springer-Spiel.', tu: [{ mk: [['f3', 'm-help'], ['c3', 'm-help'], ['c6', 'm-help'], ['f6', 'm-help']] }] }
+  ] },
+  { id: 'fessel', n: 'Die Fesselung', film: [
+    { fen: 'r1bqkbnr/ppp2ppp/2np4/4p3/4P3/2N2N2/PPPP1PPP/R1BQKB1R w KQkq - 2 4', sag: 'Steht eine Figur vor ihrem König, darf sie nicht weg. Sie ist gefesselt!', tu: [600, 'f1b5', { pf: [['b5', 'e8', 'red']], mk: [['c6', 'm-threat']] }] },
+    { sag: 'Denn sonst wäre ihr König in Gefahr.', tu: [] }
+  ] },
+  { id: 'spiess', n: 'Der Spieß', film: [
+    { fen: '3q4/8/3k4/8/8/8/8/R3K3 w - - 0 1', sag: 'Greif den König an, und schau, wer hinter ihm steht!', tu: [600, 'a1d1', { pf: [['d1', 'd8', 'red']] }] },
+    { sag: 'Der König muss weg. Dann schnappst du die Dame. Das heißt Spieß!', tu: [{ pf: [] }, 'd6e6', 'd1d8'] }
+  ] },
+  { id: 'rand', n: 'Springer in die Mitte', film: [
+    { fen: '4k3/8/8/8/3N4/8/8/4K3 w - - 0 1', sag: 'In der Mitte kann der Springer auf acht Felder hüpfen.', tu: [500, { mk: [['b3', 'm-mv'], ['b5', 'm-mv'], ['c2', 'm-mv'], ['c6', 'm-mv'], ['e2', 'm-mv'], ['e6', 'm-mv'], ['f3', 'm-mv'], ['f5', 'm-mv']] }] },
+    { fen: '4k3/8/8/8/N7/8/8/4K3 w - - 0 1', sag: 'Am Rand sind es nur vier. Darum: Springer gehören in die Mitte!', tu: [500, { mk: [['b2', 'm-mv'], ['b6', 'm-mv'], ['c3', 'm-mv'], ['c5', 'm-mv']] }] }
+  ] },
+  { id: 'spanisch', n: 'Die spanische Eröffnung', film: [
+    { fen: START_FEN, sag: 'Noch ein berühmter Anfang heißt spanische Eröffnung.', tu: ['e2e4', 'e7e5', 'g1f3', 'b8c6', 'f1b5'] },
+    { sag: 'Der Läufer ärgert den Springer. Und der passt doch gerade auf den Bauern auf!', tu: [{ pf: [['b5', 'c6', 'red'], ['c6', 'e5', 'green']] }] }
+  ] },
+  { id: 'umwandlung', n: 'Bauern werden Damen', film: [
+    { fen: '8/6P1/8/8/8/2k5/8/4K3 w - - 0 1', sag: 'Kommt ein Bauer ganz hinten an, wird er zur Dame!', tu: [900, 'g7g8q'] },
+    { sag: 'Darum: Pass gut auf deine Bauern auf, wenn sie weit vorn sind!', tu: [] }
+  ] },
+  { id: 'treppe', n: 'Das Treppenmatt', film: [
+    { fen: '4k3/R7/8/8/8/8/8/1R2K3 w - - 0 1', sag: 'Zwei Türme sind ein starkes Paar: Einer hält Wache, einer setzt matt!', tu: [500, { pf: [['a7', 'h7', 'orange']] }, 900, 'b1b8', { matt: 1 }] },
+    { sag: 'Das nennt man Treppenmatt.', tu: [] }
+  ] }
+];
+
+return { PIECE: PIECE, KIND: KIND, TEAM: TEAM, LEVELS: LEVELS, BOARDS: BOARDS, SKINS: SKINS, HATS: HATS, CARDS: CARDS, GIFTS: GIFTS, FIRST: FIRST, LESSONS: LESSONS, TIPPS: TIPPS };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = Data;
 
@@ -1915,7 +2045,10 @@ const T = {
   castleNow: 'Jetzt geht der <b>Zaubertrick</b>: Der König kann sich verstecken!',
   /* Schutzengel */
   warnPatt: '<b>Halt!</b> Dann ist es <b>Patt</b>: Der Gegner kann nicht mehr ziehen, steht aber nicht im Schach. Dann gewinnt keiner!',
-  warnMatt: '<b>Halt!</b> Dann kann der Gegner <b>Schachmatt</b> setzen. Dann wäre das Spiel verloren!',
+  warnMatt: '<b>Halt!</b> Dann kann der Gegner <b>Schachmatt</b> setzen. Schau, was dann passieren würde!',
+  /* Der kleine Film zur Warnung: Elo spielt den Zug nur in Gedanken vor und zeigt, was dann droht */
+  warnMattFilm: 'Der König wird angegriffen und kann nirgends mehr hin. Das wäre <b>Schachmatt</b>!',
+  warnFilmEnde: 'Zum Glück war das nur ausgedacht. Such dir einen anderen Zug!',
   warnLoss(type, two) { return '<b>Halt!</b> Dann schnappt der Gegner <b>' + myAcc(type, two) + '</b>.'; },
   warnRep: '<b>Halt!</b> Diese Stellung gab es schon oft. Noch einmal, und es ist unentschieden.',
   warnBack: 'Gut aufgepasst! Such dir einen anderen Zug.',
@@ -1954,6 +2087,38 @@ const T = {
     zuege: 'Schon ganz lange wurde nichts geschnappt und kein Bauer gezogen. Darum ist jetzt Schluss.',
     wiederholung: 'Die gleiche Stellung kam zu oft vor. Darum ist jetzt Schluss.'
   },
+  /* Rückblick nach dem Schachmatt: Was ist passiert – und welchen Trick merkt man sich? */
+  matt: {
+    angriff(t) { return '<b>' + (t === 5 ? 'Die Dame' : 'Der ' + P[t].n) + '</b> greift den König an.'; },
+    angriff2: '<b>Zwei Figuren</b> greifen den König gleichzeitig an.',
+    flucht: {
+      bewacht: 'Der König kann nicht weglaufen: Alle Felder um ihn herum sind bewacht.',
+      gemischt: 'Der König kann nicht weglaufen: Die Felder um ihn herum sind bewacht oder besetzt.',
+      eigen: 'Der König kann nicht weglaufen: Seine eigenen Figuren stehen ihm im Weg.'
+    },
+    /* Die Figur, die Schach gibt, steht direkt neben dem König – warum schnappt er sie nicht einfach? */
+    beschuetzt(t) { return 'Der König darf <b>' + P[t].den + '</b> nicht schnappen, denn ' + P[t].er + ' wird beschützt.'; },
+    hilfe: 'Niemand kann den Angreifer schnappen, und niemand kann sich dazwischenstellen.',
+    hilfe2: 'Bei zwei Angreifern hilft nur weglaufen. Und das geht hier nicht!',
+    darum: 'Darum ist es <b>Schachmatt</b>!',
+    /* Bekannte Muster: [Was war das?, Der Trick dagegen] */
+    muster: {
+      reihe: ['Das war ein Matt in der letzten Reihe: Der König war hinter seinen eigenen Bauern eingesperrt.', 'Der Trick dagegen: Ein Bauer vor dem König geht ein Feld vor. Dann hat der König ein Fenster!'],
+      schaefer: ['Das war das <b>Schäfermatt</b>: Dame und Läufer greifen zusammen das Feld neben dem König an.', 'Der Trick dagegen: Pass am Anfang gut auf das Feld neben deinem König auf!'],
+      nah: ['Die Dame stand direkt neben dem König, und ein Helfer hat auf sie aufgepasst.', 'Der Trick dagegen: Lass die Dame vom Gegner nicht so nah an deinen König heran!'],
+      treppe: ['Das war ein Treppenmatt: Einer hält Wache, einer setzt matt!', 'Der Trick dagegen: Bleib mit dem König weg vom Rand!'],
+      erstickt: ['Der König war von seinen eigenen Figuren eingesperrt. Da hüpft der Springer einfach drüber!', 'Der Trick dagegen: Lass deinem König immer ein freies Feld!'],
+      rand: ['Am Rand hat der König nur wenig Platz. Dort fängt man ihn am leichtesten.', 'Der Trick dagegen: Bleib mit dem König weg vom Rand!'],
+      team: ['Die Figuren haben gut zusammengearbeitet: Eine greift an, die anderen bewachen die Felder.', 'Der Trick dagegen: Schau vor jedem Zug, ob der Gegner Schach geben kann!']
+    },
+    merk: 'Merk dir den Trick: So klappt es wieder!',
+    /* Wo war der König noch zu retten? n = wie viele eigene Züge vorher */
+    vorher(n) { return (n === 1 ? 'Einen Zug' : 'Zwei Züge') + ' vorher war der König noch zu retten.'; },
+    besser: '<b>Rot</b> war der Zug im Spiel. <b>Grün</b> hätte den König gerettet!',
+    vonHier: 'Von hier nochmal! Probier etwas anderes.'
+  },
+  /* Elos Tipp vor dem Spiel (die Tipps selbst stehen bei den Daten) */
+  tippStart: 'Ein Tipp vor dem Spiel!',
   /* Geschenke */
   giftAsk: 'Ein Geschenk für dich! Tippe auf das Geschenk!',
   giftGot(g) { const c = g.kind === 'k' ? D.CARDS.find(x => x.id === g.ref) : null; return (c ? 'Eine Sammelkarte: ' : '') + g.n + '. ' + (c ? c.t : g.what); },
@@ -2019,7 +2184,7 @@ T.catalog = function (stimme) {
   const vorher = wer; wer = stimme === 'f' ? 'f' : 'm';
   const out = [], add = s => { if (Array.isArray(s)) s.forEach(add); else if (s) out.push(s); };
   add(T.hello); add(T.thinks); add(T.botCheck); add(T.legend); add(T.promoAsk);
-  add([T.warnPatt, T.warnMatt, T.warnRep, T.warnBack, T.hintThink, T.hintNone, T.hint1, T.undo, T.giftAsk, T.locked, T.giftKiste, T.kisteHallo, T.setupBot, T.setupNeu, T.setupDuo, T.voiceOn]);
+  add([T.warnPatt, T.warnMatt, T.warnMattFilm, T.warnFilmEnde, T.warnRep, T.warnBack, T.hintThink, T.hintNone, T.hint1, T.undo, T.giftAsk, T.locked, T.giftKiste, T.kisteHallo, T.setupBot, T.setupNeu, T.setupDuo, T.voiceOn]);
   add([T.ideaMitte, T.ideaRaus, T.ideaZiel, T.castleOffer, T.castleShow, T.castleDo, T.castleNow, T.rochadeZeig, T.rochadeFalsch]);
   add([T.starGo, T.schoolPromo, T.deadEnd, T.hintStar, T.hintFen1, T.hintFen2, T.gold.n + '. ' + T.gold.what, T.notMate(true), T.notMate(false)]);
   [false, true].forEach(two => {
@@ -2043,6 +2208,13 @@ T.catalog = function (stimme) {
   [2, 3].forEach(t => add(T.why({ k: 'entwickeln', piece: t })));
   add(T.endRead('win', false, 0)); add(T.endRead('win', true, 0)); add(T.endRead('win', true, 1)); add(T.endRead('lose', false, 0));
   Object.keys(T.draw).forEach(k => add(T.endRead(k, false, 0)));
+  /* Rückblick nach dem Schachmatt und Elos Tipps */
+  const M = T.matt;
+  add([M.angriff2, M.flucht.bewacht, M.flucht.gemischt, M.flucht.eigen, M.hilfe, M.hilfe2, M.darum, M.merk, M.vorher(1), M.vorher(2), M.besser, M.vonHier, T.tippStart]);
+  for (let t = 1; t <= 5; t++) add(M.angriff(t));
+  [1, 3, 4, 5].forEach(t => add(M.beschuetzt(t)));
+  Object.keys(M.muster).forEach(k => add(M.muster[k]));
+  D.TIPPS.forEach(t => t.film.forEach(sz => add(sz.sag)));
   D.GIFTS.forEach(g => add(T.giftGot(g)));
   D.CARDS.forEach(c => add(T.card(c)));
   D.LESSONS.forEach(l => { add(l.intro); l.tasks.forEach(t => { add(t.say); if (t.quiz) { const a = D.KIND[t.quiz[0]], b = D.KIND[t.quiz[1]]; add(T.passed(3, T.quizRight(a, b))); add(T.passed(2, T.quizRight(a, b))); add(T.quizWrong(a, b)); } }); });
@@ -2060,10 +2232,10 @@ return T;
 if (typeof module !== 'undefined' && module.exports) module.exports = Txt;
 
 /* Verzeichnis der eingesprochenen Sätze – wird von stimme/master.py erzeugt. Nicht von Hand ändern. */
-var VoiceIndex = {"file":"stimme-c89827ba.mp3","size":5887304,"voice":"thorsten-high","sr":22050,"map":{"17i3ale":[0,14733],"c7t7yn":[14733,7836],"56ilmw":[22569,7523],"134m2fw":[30092,12225],"1vbkepj":[42317,8620],"1xx16cx":[50937,17868],"trb97a":[68805,19748],"enz73n":[88553,8777],"cb9ekt":[97330,7523],"hqrzpb":[104853,27428],"3z17h":[132281,6739],"1et3tb0":[139020,15987],"lksm0v":[155007,9247],"16qu1lr":[164254,13792],"k3d2wd":[178046,13792],"wceo0n":[191838,14576],"1sojoxp":[206414,4702],"14at10k":[211116,14419],"1t8t1fz":[225535,4859],"blenwk":[230394,15987],"1a589gx":[246381,5172],"1r2wwv1":[251553,5329],"1pr9mi8":[256882,7680],"1hdwgjc":[264562,6426],"uramjw":[270988,7366],"obe310":[278354,7053],"17wva7h":[285407,14890],"qwn4dv":[300297,15673],"1kcyh9s":[315970,14263],"nkxecy":[330233,7053],"ftxs7f":[337286,17241],"1jmjyx":[354527,6896],"1usry8z":[361423,7836],"wq858w":[369259,10501],"hhdau":[379760,6739],"1ifgab4":[386499,5015],"ll08cb":[391514,10031],"1s3a64t":[401545,7523],"8ee3c8":[409068,6583],"1nkh44c":[415651,7366],"9pga5d":[423017,13949],"1jxz3hg":[436966,12539],"1vz8z0t":[449505,16457],"zvepsk":[465962,6583],"rt2n49":[472545,11128],"1d5ueno":[483673,8463],"13ev2c0":[492136,12068],"h4enhp":[504204,7680],"1mgf8kp":[511884,26331],"yadgc2":[538215,10031],"d7bzto":[548246,7053],"4sfwjn":[555299,22256],"1eduyen":[577555,16614],"1wkfglx":[594169,7366],"1xq54wh":[601535,21316],"hwld5i":[622851,7053],"1fvka4z":[629904,9717],"2zonry":[639621,15046],"nz7wkp":[654667,14890],"24hvwx":[669557,16770],"s64rjb":[686327,7680],"2c8ubj":[694007,11128],"1j9ef5b":[705135,9561],"1r8z0c3":[714696,6583],"1nxokor":[721279,14890],"45xpyn":[736169,9561],"1tkz7mu":[745730,12382],"1rr8quy":[758112,7993],"rpt65j":[766105,6896],"1fp25ke":[773001,8777],"1h4htrh":[781778,20062],"4ybuw8":[801840,12225],"ryyte5":[814065,6896],"23xk68":[820961,11441],"cllcc4":[832402,4388],"bi8497":[836790,14733],"lu8hsx":[851523,6112],"f3nafs":[857635,12382],"j5r0im":[870017,15673],"1bb5wxo":[885690,6112],"1efphde":[891802,16927],"godikj":[908729,9404],"1w0ioap":[918133,25391],"161jtc":[943524,16300],"x9cyrh":[959824,10814],"8zqkof":[970638,16457],"1ry1li3":[987095,12539],"18pee0w":[999634,13479],"mohyhy":[1013113,12382],"fhyfuc":[1025495,14263],"1rjvtea":[1039758,12539],"1xmgbkk":[1052297,14419],"ffpqgs":[1066716,13479],"7s7o38":[1080195,12068],"r5cimy":[1092263,7836],"18wsl9f":[1100099,5172],"16maepr":[1105271,7210],"1ldummk":[1112481,14419],"1170von":[1126900,13949],"11femqp":[1140849,14890],"1grhg9f":[1155739,15830],"9klxh6":[1171569,14576],"9jmgu1":[1186145,12382],"16fpm6u":[1198527,6112],"11ycq98":[1204639,11598],"1cxouob":[1216237,7680],"yebg52":[1223917,18965],"1gsxkgx":[1242882,5799],"7o7r4n":[1248681,16143],"1vkl841":[1264824,20219],"170w0ga":[1285043,17397],"1bwb9ae":[1302440,21002],"1d1hi1p":[1323442,18651],"1e3dwkg":[1342093,18808],"xs6qqa":[1360901,18338],"1jizrgs":[1379239,18494],"1l5d0h9":[1397733,18494],"18b87nb":[1416227,7680],"17x1doi":[1423907,17711],"5enu4j":[1441618,16457],"1dqln3x":[1458075,18494],"1bhuq2m":[1476569,15203],"1uhiyt6":[1491772,19905],"13e9dqx":[1511677,16300],"1rohkrg":[1527977,18024],"geex0e":[1546001,16143],"xsq5uw":[1562144,17554],"30jgih":[1579698,19278],"kkp46r":[1598976,6739],"1ewlilk":[1605715,16770],"uv0qmb":[1622485,16300],"v2inrx":[1638785,14890],"1jcjo7j":[1653675,15046],"2o40ty":[1668721,14890],"eec9cu":[1683611,6426],"du4nsw":[1690037,8934],"1fk8yfx":[1698971,14576],"slyvti":[1713547,10814],"j8d6wy":[1724361,9404],"uua1di":[1733765,14733],"1d08zzv":[1748498,8934],"5ehlmp":[1757432,6896],"m757dq":[1764328,11598],"1u0u6m3":[1775926,6583],"myb0w2":[1782509,19278],"1gkn8af":[1801787,9717],"1yxr2nl":[1811504,10188],"b4uwom":[1821692,7993],"i8rxjd":[1829685,12068],"1t7w539":[1841753,6739],"1r8i4j8":[1848492,12539],"2d1on":[1861031,9717],"so8eyf":[1870748,11441],"1vyvb13":[1882189,6112],"5q96qi":[1888301,15830],"1ekvi4l":[1904131,5642],"85spsl":[1909773,9717],"143dy2o":[1919490,7366],"2mbvbh":[1926856,11755],"zdsco8":[1938611,5956],"1sb8pel":[1944567,6583],"1jamm0i":[1951150,15830],"1gicy7c":[1966980,9247],"v3su7i":[1976227,15673],"yyq4ql":[1991900,9561],"4or8mu":[2001461,9090],"voufko":[2010551,11285],"z24kw5":[2021836,5956],"aifmac":[2027792,9247],"17tszcg":[2037039,7053],"19wlfwn":[2044092,9874],"8qce8p":[2053966,8620],"1tubqbm":[2062586,10501],"19v6blf":[2073087,10501],"1nsgebb":[2083588,10188],"1b9oz2x":[2093776,6112],"flq1hh":[2099888,13949],"h5klpv":[2113837,13479],"1y2c269":[2127316,13792],"o8yfkn":[2141108,13165],"pvpq8v":[2154273,8463],"w2r9zb":[2162736,26018],"1i5oyhy":[2188754,16143],"6vjrbk":[2204897,7053],"10w2f6w":[2211950,13479],"1cpg88g":[2225429,10971],"6f39ml":[2236400,12225],"1xii9ny":[2248625,6269],"4v9h4c":[2254894,12382],"1ssbn58":[2267276,6739],"lqrczi":[2274015,13479],"z9w348":[2287494,10814],"1ckoqyi":[2298308,7053],"v6wm2w":[2305361,10344],"v9tefa":[2315705,7680],"1v622t1":[2323385,13792],"1ok6s4j":[2337177,14890],"1eyim21":[2352067,14106],"1sachs1":[2366173,16300],"x3o915":[2382473,17868],"hb8156":[2400341,17084],"gx0m3j":[2417425,14263],"1heo915":[2431688,15987],"14sifg8":[2447675,15830],"ug8cqy":[2463505,15203],"vuu10k":[2478708,14890],"1egk0jb":[2493598,13792],"10kt90j":[2507390,12695],"5sjx6d":[2520085,12382],"4102b3":[2532467,11285],"1tsb7hb":[2543752,13479],"k6r3h3":[2557231,14263],"1v83qhq":[2571494,17241],"28r537":[2588735,14263],"hkhv3n":[2602998,13165],"w5xtlm":[2616163,12852],"1vao4cg":[2629015,13165],"1o2uan2":[2642180,11912],"17vwj5e":[2654092,12068],"1r5nean":[2666160,10814],"anlqn5":[2676974,10814],"u5umy3":[2687788,10188],"1871803":[2697976,11598],"1k7m17n":[2709574,14419],"6yxaqy":[2723993,17711],"t4shof":[2741704,13009],"1d5xhgn":[2754713,12382],"1mj2wlq":[2767095,12695],"12cj444":[2779790,13165],"10dx2eq":[2792955,11285],"1fqcsba":[2804240,11755],"1jc2e9n":[2815995,10971],"ohbhd":[2826966,5799],"11ytr9o":[2832765,10344],"8l35gm":[2843109,6896],"onysqn":[2850005,14419],"11khij2":[2864424,9561],"1gzctj9":[2873985,11128],"vtndic":[2885113,8620],"16uajfi":[2893733,9090],"15gciyn":[2902823,9247],"1vbipn0":[2912070,4702],"19e3g1n":[2916772,7366],"1018bhx":[2924138,9247],"18k4myq":[2933385,7366],"1sax5if":[2940751,8620],"ye0pm2":[2949371,8307],"uzs3it":[2957678,9247],"v9rp7s":[2966925,8934],"1tutzye":[2975859,8620],"1wwpml3":[2984479,8777],"1guxq7f":[2993256,9090],"1ex3bcb":[3002346,9404],"1e34i9e":[3011750,9090],"klk2dg":[3020840,7993],"i3nn4p":[3028833,8307],"fdnx05":[3037140,8777],"vqv7w9":[3045917,7836],"y8rn50":[3053753,8463],"1r7kbnu":[3062216,7836],"1nlphn7":[3070052,7366],"mp6bo7":[3077418,8620],"1lcx27x":[3086038,8307],"1h730tc":[3094345,8620],"1i9lpp2":[3102965,7836],"1gdi9mz":[3110801,10188],"1lbhcbr":[3120989,8150],"1nfq96p":[3129139,9874],"rv0qsj":[3139013,8307],"omemdm":[3147320,9247],"1w2y0e9":[3156567,8934],"129soa0":[3165501,9404],"q8q0oc":[3174905,24921],"1bg5uoi":[3199826,7053],"1p65cgj":[3206879,18808],"vfl7ee":[3225687,6739],"1ifupun":[3232426,21629],"4j1p8s":[3254055,14733],"16wa387":[3268788,13009],"d3t70k":[3281797,10188],"1rlwzwc":[3291985,18808],"1uz91s0":[3310793,6583],"1ohnkhd":[3317376,15830],"1bopr42":[3333206,10031],"1j21jsv":[3343237,25234],"1ldw87e":[3368471,7053],"q1j0sj":[3375524,17554],"1fd4l8h":[3393078,12695],"5owxnw":[3405773,10501],"xyriuq":[3416274,12225],"484rw2":[3428499,13949],"1jq1eku":[3442448,12382],"1gdvegs":[3454830,13792],"1rgp2gx":[3468622,12382],"16tcowc":[3481004,13792],"c2u7d5":[3494796,11755],"bjpi4s":[3506551,12695],"6ob6qo":[3519246,19121],"7s9409":[3538367,17397],"1dk5ai6":[3555764,16927],"ac4q91":[3572691,15673],"1oq5d1g":[3588364,15203],"1i59dbf":[3603567,16300],"1dmt5l1":[3619867,15830],"119omzd":[3635697,16614],"1vpiixq":[3652311,16143],"lbb44v":[3668454,15203],"nltch1":[3683657,13322],"1llwgvv":[3696979,13636],"i6bvfs":[3710615,13165],"kic2cg":[3723780,14263],"2gvbw4":[3738043,13636],"1caw3zf":[3751679,14419],"1ofh1p8":[3766098,15046],"17j7kj4":[3781144,12852],"sorz4":[3793996,10814],"bndbrc":[3804810,13009],"1q1mgrv":[3817819,11755],"1csdrrx":[3829574,10814],"1ip9zdv":[3840388,11441],"uovqpg":[3851829,10814],"1keeqhl":[3862643,13636],"1b2b0y9":[3876279,10971],"yk0vln":[3887250,14419],"19fha9f":[3901669,7993],"1f7mmjb":[3909662,10971],"pekkm4":[3920633,15673],"1baoq2i":[3936306,10971],"1qipuvs":[3947277,13165],"12jxvhu":[3960442,7993],"17569h9":[3968435,14419],"dp1slb":[3982854,14106],"it6ioh":[3996960,7210],"1c6k7qa":[4004170,14419],"xli3o1":[4018589,28839],"1ewtqs8":[4047428,12068],"1b2gtip":[4059496,15987],"h77snn":[4075483,5956],"1y1pvei":[4081439,10188],"oh3www":[4091627,9247],"p2ngy9":[4100874,13949],"1u5598j":[4114823,9561],"81l52z":[4124384,15046],"1rsisyy":[4139430,13949],"1fdwxk6":[4153379,20532],"yc81w6":[4173911,18965],"1kgqje4":[4192876,13792],"4akawz":[4206668,14890],"jvefdu":[4221558,19592],"x4p99v":[4241150,21629],"vfz4t8":[4262779,18181],"szvj0w":[4280960,20219],"wie75d":[4301179,37459],"g57sw7":[4338638,21629],"1ngaheq":[4360267,16143],"1h30g7m":[4376410,17868],"14insij":[4394278,7680],"179zsum":[4401958,20375],"1euv3tk":[4422333,5956],"kygzs7":[4428289,7366],"1frhv9u":[4435655,12068],"13ykwu":[4447723,6269],"11izrzy":[4453992,15360],"8plw7k":[4469352,11441],"i1jse":[4480793,9090],"7y44eu":[4489883,6583],"1d9ej1q":[4496466,7680],"1k4lf3f":[4504146,15830],"1apkw7c":[4519976,13009],"1hb34hd":[4532985,10501],"1mpayro":[4543486,7836],"lxkoww":[4551322,7366],"d3i2nq":[4558688,7993],"h0x0ay":[4566681,22256],"18goiai":[4588937,10344],"1kukl9p":[4599281,9247],"1c3kre6":[4608528,11755],"13ou45l":[4620283,7993],"1okr2gz":[4628276,19905],"1eqish0":[4648181,9561],"1bmysa5":[4657742,11128],"r8uyjl":[4668870,8150],"1jz309d":[4677020,8307],"1h4cvfd":[4685327,10188],"1np0b1d":[4695515,12382],"1rb1oi4":[4707897,6269],"1lr0o3":[4714166,19278],"my2vg7":[4733444,11598],"skjtag":[4745042,9247],"16a5iu1":[4754289,14733],"1lr336k":[4769022,12852],"4czhib":[4781874,6269],"18znw61":[4788143,20532],"1dqroqp":[4808675,10658],"1yqwgou":[4819333,11598],"eke4b":[4830931,14890],"cwadwb":[4845821,6269],"17xzx7j":[4852090,21472],"wils0f":[4873562,11441],"199iw68":[4885003,10501],"uz9z11":[4895504,14263],"sn08gm":[4909767,7210],"jcwsl":[4916977,12695],"1adpdo5":[4929672,7210],"ootz40":[4936882,13322],"1e0zn3m":[4950204,7836],"1giijaw":[4958040,8777],"1wot0vu":[4966817,14890],"4ad56a":[4981707,5015],"1s2kvbi":[4986722,10971],"l0dj7a":[4997693,9247],"7tb35e":[5006940,17084],"1cbrdgx":[5024024,9247],"9ft8eg":[5033271,7680],"93qupi":[5040951,13165],"1x77ekm":[5054116,6426],"pd46j6":[5060542,10501],"13ryzgz":[5071043,16614],"xcirp2":[5087657,17241],"1fwb9tc":[5104898,20219],"1gkej2i":[5125117,26645],"dc9lze":[5151762,20532],"yuhh0n":[5172294,11598],"1cgdhyb":[5183892,17868],"1acku00":[5201760,8150],"l4nvp9":[5209910,6896],"lr5ttk":[5216806,6426],"1ormj79":[5223232,10188],"19tk3li":[5233420,12382],"stkobr":[5245802,10344],"1i2qi7r":[5256146,7366],"8xgmu0":[5263512,7210],"skda1z":[5270722,11285],"kmeyyr":[5282007,10188],"1qys70":[5292195,10658],"1bm0djp":[5302853,5485],"10krhoh":[5308338,17241],"1rwceeg":[5325579,7523],"8ku2of":[5333102,9247],"okrc1k":[5342349,11285],"1uuywdb":[5353634,7523],"jrqxx9":[5361157,10971],"1dtdk4h":[5372128,6112],"19cyfsk":[5378240,9874],"1gvcaor":[5388114,13949],"1tu6jtu":[5402063,8777],"fnygkj":[5410840,9561],"ow7ixf":[5420401,9090],"13vmfcw":[5429491,10658],"3w3hul":[5440149,20532],"o70g4a":[5460681,10344],"1msh8jg":[5471025,17241],"yi8cj4":[5488266,10971],"1g5t04e":[5499237,9404],"xdr71r":[5508641,10031],"wi74i4":[5518672,8463],"75oaek":[5527135,10501],"140li5y":[5537636,11755],"1gcdbjw":[5549391,9404],"1vqu8xm":[5558795,10814],"6tmqwr":[5569609,8620],"stlfpx":[5578229,20062],"13nr01u":[5598291,10501],"75dwsx":[5608792,14733],"dratyb":[5623525,13009],"1frw1vz":[5636534,12539],"192ckhq":[5649073,14576],"16hxcu2":[5663649,13792],"qmlkhb":[5677441,13949],"kz36bv":[5691390,13636],"48xipw":[5705026,13165],"qmn2a0":[5718191,13479],"1hly4dh":[5731670,13792],"vriiop":[5745462,13165],"1avrrze":[5758627,14263],"jwt9ce":[5772890,13792],"eatxkr":[5786682,14263],"1d29rsv":[5800945,13165],"19zxs0w":[5814110,14419],"av0qnw":[5828529,14890],"k868wi":[5843419,11912],"1ct2s5y":[5855331,14106],"1a7oibh":[5869437,8777],"1fu73hx":[5878214,9090]}};
+var VoiceIndex = {"file":"stimme-fa6049b2.mp3","size":7330333,"voice":"thorsten-high","sr":22050,"map":{"17i3ale":[0,14733],"c7t7yn":[14733,7836],"56ilmw":[22569,7523],"134m2fw":[30092,12225],"1vbkepj":[42317,8620],"1xx16cx":[50937,17868],"trb97a":[68805,19748],"enz73n":[88553,8777],"cb9ekt":[97330,7523],"hqrzpb":[104853,27428],"3z17h":[132281,6739],"1et3tb0":[139020,15987],"1ratbne":[155007,12225],"1rdvdkx":[167232,16770],"1jql4bo":[184002,6426],"1jifaam":[190428,9404],"y1uy8k":[199832,9561],"16qu1lr":[209393,13792],"k3d2wd":[223185,13792],"wceo0n":[236977,14576],"1sojoxp":[251553,4702],"14at10k":[256255,14419],"1t8t1fz":[270674,4859],"blenwk":[275533,15987],"1a589gx":[291520,5172],"1r2wwv1":[296692,5329],"1pr9mi8":[302021,7680],"1hdwgjc":[309701,6426],"uramjw":[316127,7366],"obe310":[323493,7053],"17wva7h":[330546,14890],"qwn4dv":[345436,15673],"1kcyh9s":[361109,14263],"nkxecy":[375372,7053],"ftxs7f":[382425,17241],"1jmjyx":[399666,6896],"1usry8z":[406562,7836],"wq858w":[414398,10501],"hhdau":[424899,6739],"1ifgab4":[431638,5015],"ll08cb":[436653,10031],"1s3a64t":[446684,7523],"8ee3c8":[454207,6583],"1nkh44c":[460790,7366],"9pga5d":[468156,13949],"1jxz3hg":[482105,12539],"1vz8z0t":[494644,16457],"zvepsk":[511101,6583],"rt2n49":[517684,11128],"1d5ueno":[528812,8463],"13ev2c0":[537275,12068],"h4enhp":[549343,7680],"1mgf8kp":[557023,26331],"yadgc2":[583354,10031],"d7bzto":[593385,7053],"4sfwjn":[600438,22256],"1eduyen":[622694,16614],"1wkfglx":[639308,7366],"1xq54wh":[646674,21316],"hwld5i":[667990,7053],"1fvka4z":[675043,9717],"2zonry":[684760,15046],"nz7wkp":[699806,14890],"24hvwx":[714696,16770],"s64rjb":[731466,7680],"2c8ubj":[739146,11128],"1j9ef5b":[750274,9561],"1r8z0c3":[759835,6583],"1nxokor":[766418,14890],"45xpyn":[781308,9561],"1tkz7mu":[790869,12382],"1rr8quy":[803251,7993],"rpt65j":[811244,6896],"1fp25ke":[818140,8777],"1h4htrh":[826917,20062],"4ybuw8":[846979,12225],"ryyte5":[859204,6896],"23xk68":[866100,11441],"cllcc4":[877541,4388],"bi8497":[881929,14733],"lu8hsx":[896662,6112],"f3nafs":[902774,12382],"j5r0im":[915156,15673],"1bb5wxo":[930829,6112],"1efphde":[936941,16927],"godikj":[953868,9404],"1w0ioap":[963272,25391],"161jtc":[988663,16300],"x9cyrh":[1004963,10814],"8zqkof":[1015777,16457],"1ry1li3":[1032234,12539],"18pee0w":[1044773,13479],"mohyhy":[1058252,12382],"fhyfuc":[1070634,14263],"1rjvtea":[1084897,12539],"1xmgbkk":[1097436,14419],"ffpqgs":[1111855,13479],"7s7o38":[1125334,12068],"r5cimy":[1137402,7836],"18wsl9f":[1145238,5172],"16maepr":[1150410,7210],"1ldummk":[1157620,14419],"1170von":[1172039,13949],"11femqp":[1185988,14890],"1grhg9f":[1200878,15830],"9klxh6":[1216708,14576],"9jmgu1":[1231284,12382],"16fpm6u":[1243666,6112],"11ycq98":[1249778,11598],"1cxouob":[1261376,7680],"yebg52":[1269056,18965],"1gsxkgx":[1288021,5799],"7o7r4n":[1293820,16143],"1vkl841":[1309963,20219],"170w0ga":[1330182,17397],"1bwb9ae":[1347579,21002],"1d1hi1p":[1368581,18651],"1e3dwkg":[1387232,18808],"xs6qqa":[1406040,18338],"1jizrgs":[1424378,18494],"1l5d0h9":[1442872,18494],"18b87nb":[1461366,7680],"17x1doi":[1469046,17711],"5enu4j":[1486757,16457],"1dqln3x":[1503214,18494],"1bhuq2m":[1521708,15203],"1uhiyt6":[1536911,19905],"13e9dqx":[1556816,16300],"1rohkrg":[1573116,18024],"geex0e":[1591140,16143],"xsq5uw":[1607283,17554],"30jgih":[1624837,19278],"kkp46r":[1644115,6739],"1ewlilk":[1650854,16770],"uv0qmb":[1667624,16300],"v2inrx":[1683924,14890],"1jcjo7j":[1698814,15046],"2o40ty":[1713860,14890],"eec9cu":[1728750,6426],"du4nsw":[1735176,8934],"1fk8yfx":[1744110,14576],"slyvti":[1758686,10814],"j8d6wy":[1769500,9404],"uua1di":[1778904,14733],"1d08zzv":[1793637,8934],"5ehlmp":[1802571,6896],"m757dq":[1809467,11598],"1u0u6m3":[1821065,6583],"myb0w2":[1827648,19278],"1gkn8af":[1846926,9717],"1yxr2nl":[1856643,10188],"b4uwom":[1866831,7993],"i8rxjd":[1874824,12068],"1t7w539":[1886892,6739],"1r8i4j8":[1893631,12539],"2d1on":[1906170,9717],"so8eyf":[1915887,11441],"1vyvb13":[1927328,6112],"5q96qi":[1933440,15830],"1ekvi4l":[1949270,5642],"85spsl":[1954912,9717],"143dy2o":[1964629,7366],"2mbvbh":[1971995,11755],"zdsco8":[1983750,5956],"1sb8pel":[1989706,6583],"1jamm0i":[1996289,15830],"1gicy7c":[2012119,9247],"v3su7i":[2021366,15673],"yyq4ql":[2037039,9561],"4or8mu":[2046600,9090],"voufko":[2055690,11285],"z24kw5":[2066975,5956],"aifmac":[2072931,9247],"17tszcg":[2082178,7053],"19wlfwn":[2089231,9874],"8qce8p":[2099105,8620],"1tubqbm":[2107725,10501],"19v6blf":[2118226,10501],"1nsgebb":[2128727,10188],"1b9oz2x":[2138915,6112],"flq1hh":[2145027,13949],"h5klpv":[2158976,13479],"1y2c269":[2172455,13792],"o8yfkn":[2186247,13165],"pvpq8v":[2199412,8463],"w2r9zb":[2207875,26018],"1i5oyhy":[2233893,16143],"6vjrbk":[2250036,7053],"10w2f6w":[2257089,13479],"1cpg88g":[2270568,10971],"6f39ml":[2281539,12225],"1xii9ny":[2293764,6269],"4v9h4c":[2300033,12382],"1ssbn58":[2312415,6739],"lqrczi":[2319154,13479],"z9w348":[2332633,10814],"1ckoqyi":[2343447,7053],"v6wm2w":[2350500,10344],"v9tefa":[2360844,7680],"1v622t1":[2368524,13792],"1ok6s4j":[2382316,14890],"1eyim21":[2397206,14106],"1sachs1":[2411312,16300],"x3o915":[2427612,17868],"hb8156":[2445480,17084],"gx0m3j":[2462564,14263],"1heo915":[2476827,15987],"14sifg8":[2492814,15830],"ug8cqy":[2508644,15203],"vuu10k":[2523847,14890],"1egk0jb":[2538737,13792],"10kt90j":[2552529,12695],"5sjx6d":[2565224,12382],"4102b3":[2577606,11285],"1tsb7hb":[2588891,13479],"k6r3h3":[2602370,14263],"1v83qhq":[2616633,17241],"28r537":[2633874,14263],"hkhv3n":[2648137,13165],"w5xtlm":[2661302,12852],"1vao4cg":[2674154,13165],"1o2uan2":[2687319,11912],"17vwj5e":[2699231,12068],"1r5nean":[2711299,10814],"anlqn5":[2722113,10814],"u5umy3":[2732927,10188],"1871803":[2743115,11598],"1k7m17n":[2754713,14419],"6yxaqy":[2769132,17711],"t4shof":[2786843,13009],"1d5xhgn":[2799852,12382],"1mj2wlq":[2812234,12695],"12cj444":[2824929,13165],"10dx2eq":[2838094,11285],"1fqcsba":[2849379,11755],"1jc2e9n":[2861134,10971],"ohbhd":[2872105,5799],"11ytr9o":[2877904,10344],"8l35gm":[2888248,6896],"onysqn":[2895144,14419],"11khij2":[2909563,9561],"1gzctj9":[2919124,11128],"vtndic":[2930252,8620],"16uajfi":[2938872,9090],"15gciyn":[2947962,9247],"1vbipn0":[2957209,4702],"19e3g1n":[2961911,7366],"1018bhx":[2969277,9247],"18k4myq":[2978524,7366],"1sax5if":[2985890,8620],"ye0pm2":[2994510,8307],"uzs3it":[3002817,9247],"v9rp7s":[3012064,8934],"1tutzye":[3020998,8620],"1wwpml3":[3029618,8777],"1guxq7f":[3038395,9090],"1ex3bcb":[3047485,9404],"1e34i9e":[3056889,9090],"klk2dg":[3065979,7993],"i3nn4p":[3073972,8307],"fdnx05":[3082279,8777],"vqv7w9":[3091056,7836],"y8rn50":[3098892,8463],"1r7kbnu":[3107355,7836],"1nlphn7":[3115191,7366],"mp6bo7":[3122557,8620],"1lcx27x":[3131177,8307],"1h730tc":[3139484,8620],"1i9lpp2":[3148104,7836],"1gdi9mz":[3155940,10188],"1lbhcbr":[3166128,8150],"1nfq96p":[3174278,9874],"rv0qsj":[3184152,8307],"omemdm":[3192459,9247],"1w2y0e9":[3201706,8934],"129soa0":[3210640,9404],"q8q0oc":[3220044,24921],"1bg5uoi":[3244965,7053],"1p65cgj":[3252018,18808],"vfl7ee":[3270826,6739],"1ifupun":[3277565,21629],"4j1p8s":[3299194,14733],"16wa387":[3313927,13009],"d3t70k":[3326936,10188],"1rlwzwc":[3337124,18808],"1uz91s0":[3355932,6583],"1ohnkhd":[3362515,15830],"1bopr42":[3378345,10031],"1j21jsv":[3388376,25234],"1ldw87e":[3413610,7053],"q1j0sj":[3420663,17554],"1v12o0p":[3438217,18024],"7b8rqh":[3456241,23040],"18foq8i":[3479281,24921],"1ujewge":[3504202,24137],"jl16hk":[3528339,22099],"1wrvr21":[3550438,15360],"1fvwej":[3565798,6426],"bdp9qh":[3572224,7993],"1gikq4g":[3580217,14263],"1dbjvbh":[3594480,14733],"u3f50l":[3609213,15673],"1l214nw":[3624886,9090],"viqimo":[3633976,10501],"611j7l":[3644477,5956],"luqt1z":[3650433,7053],"t175o5":[3657486,10814],"1nh1oxm":[3668300,10814],"1327wnk":[3679114,10814],"1f4hwqe":[3689928,10344],"1bh8yva":[3700272,9717],"qla23b":[3709989,19748],"1omq32q":[3729737,18651],"147aiag":[3748388,17397],"7mw1mw":[3765785,18965],"1hz5oy6":[3784750,27742],"1jwdbun":[3812492,20689],"mk3iyv":[3833181,9247],"1t89cml":[3842428,27585],"ky6b8l":[3870013,23353],"1wprp9a":[3893366,24607],"lqvujd":[3917973,23040],"1ac49vs":[3941013,17711],"fp7314":[3958724,16770],"voynob":[3975494,17241],"9fl667":[3992735,11285],"1bn62oe":[4004020,19748],"rps03":[4023768,12068],"m8p9lq":[4035836,10031],"11f6ryk":[4045867,30093],"yyycs6":[4075960,23353],"1yc6cps":[4099313,15046],"42ale2":[4114359,15203],"5zspum":[4129562,17084],"11di6sk":[4146646,11128],"cik1mf":[4157774,36205],"l43cfa":[4193979,16143],"1fhloee":[4210122,20532],"1poh5os":[4230654,7836],"95w7dg":[4238490,10814],"55bg4e":[4249304,11598],"1pb2nq1":[4260902,7523],"xuvg50":[4268425,22256],"vdprpb":[4290681,18181],"lbedno":[4308862,12539],"1xsn3c1":[4321401,10501],"dy9t7u":[4331902,12852],"1jc92me":[4344754,9717],"14yw4qe":[4354471,18338],"14na62g":[4372809,5485],"6pk2dz":[4378294,16614],"dnxd6y":[4394908,21629],"1fgltb1":[4416537,10658],"j38xbu":[4427195,12539],"wdfpyg":[4439734,14576],"1t80ilc":[4454310,22099],"nqwelc":[4476409,17241],"3z39kn":[4493650,11441],"zr07mk":[4505091,20689],"7i4uwe":[4525780,14576],"17k6yvz":[4540356,14263],"11iqjpu":[4554619,14106],"bo6gqj":[4568725,13949],"1k5ll7y":[4582674,12382],"1iuwn0d":[4595056,18651],"1ur78hv":[4613707,10344],"dbjmvb":[4624051,17397],"154iiyh":[4641448,6112],"ir8ctv":[4647560,10814],"1ywup4n":[4658374,17397],"nydw3o":[4675771,6426],"7ouk1m":[4682197,6896],"7uqb8b":[4689093,6112],"1xomyos":[4695205,15360],"96frmx":[4710565,7210],"1p20y92":[4717775,11598],"rycum5":[4729373,16927],"bx3wgn":[4746300,9717],"v50i3f":[4756017,11912],"14dv303":[4767929,15203],"bowqrr":[4783132,21472],"sw0q9o":[4804604,23353],"7t9qb2":[4827957,8150],"1fd4l8h":[4836107,12695],"5owxnw":[4848802,10501],"xyriuq":[4859303,12225],"484rw2":[4871528,13949],"1jq1eku":[4885477,12382],"1gdvegs":[4897859,13792],"1rgp2gx":[4911651,12382],"16tcowc":[4924033,13792],"c2u7d5":[4937825,11755],"bjpi4s":[4949580,12695],"6ob6qo":[4962275,19121],"7s9409":[4981396,17397],"1dk5ai6":[4998793,16927],"ac4q91":[5015720,15673],"1oq5d1g":[5031393,15203],"1i59dbf":[5046596,16300],"1dmt5l1":[5062896,15830],"119omzd":[5078726,16614],"1vpiixq":[5095340,16143],"lbb44v":[5111483,15203],"nltch1":[5126686,13322],"1llwgvv":[5140008,13636],"i6bvfs":[5153644,13165],"kic2cg":[5166809,14263],"2gvbw4":[5181072,13636],"1caw3zf":[5194708,14419],"1ofh1p8":[5209127,15046],"17j7kj4":[5224173,12852],"sorz4":[5237025,10814],"bndbrc":[5247839,13009],"1q1mgrv":[5260848,11755],"1csdrrx":[5272603,10814],"1ip9zdv":[5283417,11441],"uovqpg":[5294858,10814],"1keeqhl":[5305672,13636],"1b2b0y9":[5319308,10971],"yk0vln":[5330279,14419],"19fha9f":[5344698,7993],"1f7mmjb":[5352691,10971],"pekkm4":[5363662,15673],"1baoq2i":[5379335,10971],"1qipuvs":[5390306,13165],"12jxvhu":[5403471,7993],"17569h9":[5411464,14419],"dp1slb":[5425883,14106],"it6ioh":[5439989,7210],"1c6k7qa":[5447199,14419],"xli3o1":[5461618,28839],"1ewtqs8":[5490457,12068],"1b2gtip":[5502525,15987],"h77snn":[5518512,5956],"1y1pvei":[5524468,10188],"oh3www":[5534656,9247],"p2ngy9":[5543903,13949],"1u5598j":[5557852,9561],"81l52z":[5567413,15046],"1rsisyy":[5582459,13949],"1fdwxk6":[5596408,20532],"yc81w6":[5616940,18965],"1kgqje4":[5635905,13792],"4akawz":[5649697,14890],"jvefdu":[5664587,19592],"x4p99v":[5684179,21629],"vfz4t8":[5705808,18181],"szvj0w":[5723989,20219],"wie75d":[5744208,37459],"g57sw7":[5781667,21629],"1ngaheq":[5803296,16143],"1h30g7m":[5819439,17868],"14insij":[5837307,7680],"179zsum":[5844987,20375],"1euv3tk":[5865362,5956],"kygzs7":[5871318,7366],"1frhv9u":[5878684,12068],"13ykwu":[5890752,6269],"11izrzy":[5897021,15360],"8plw7k":[5912381,11441],"i1jse":[5923822,9090],"7y44eu":[5932912,6583],"1d9ej1q":[5939495,7680],"1k4lf3f":[5947175,15830],"1apkw7c":[5963005,13009],"1hb34hd":[5976014,10501],"1mpayro":[5986515,7836],"lxkoww":[5994351,7366],"d3i2nq":[6001717,7993],"h0x0ay":[6009710,22256],"18goiai":[6031966,10344],"1kukl9p":[6042310,9247],"1c3kre6":[6051557,11755],"13ou45l":[6063312,7993],"1okr2gz":[6071305,19905],"1eqish0":[6091210,9561],"1bmysa5":[6100771,11128],"r8uyjl":[6111899,8150],"1jz309d":[6120049,8307],"1h4cvfd":[6128356,10188],"1np0b1d":[6138544,12382],"1rb1oi4":[6150926,6269],"1lr0o3":[6157195,19278],"my2vg7":[6176473,11598],"skjtag":[6188071,9247],"16a5iu1":[6197318,14733],"1lr336k":[6212051,12852],"4czhib":[6224903,6269],"18znw61":[6231172,20532],"1dqroqp":[6251704,10658],"1yqwgou":[6262362,11598],"eke4b":[6273960,14890],"cwadwb":[6288850,6269],"17xzx7j":[6295119,21472],"wils0f":[6316591,11441],"199iw68":[6328032,10501],"uz9z11":[6338533,14263],"sn08gm":[6352796,7210],"jcwsl":[6360006,12695],"1adpdo5":[6372701,7210],"ootz40":[6379911,13322],"1e0zn3m":[6393233,7836],"1giijaw":[6401069,8777],"1wot0vu":[6409846,14890],"4ad56a":[6424736,5015],"1s2kvbi":[6429751,10971],"l0dj7a":[6440722,9247],"7tb35e":[6449969,17084],"1cbrdgx":[6467053,9247],"9ft8eg":[6476300,7680],"93qupi":[6483980,13165],"1x77ekm":[6497145,6426],"pd46j6":[6503571,10501],"13ryzgz":[6514072,16614],"xcirp2":[6530686,17241],"1fwb9tc":[6547927,20219],"1gkej2i":[6568146,26645],"dc9lze":[6594791,20532],"yuhh0n":[6615323,11598],"1cgdhyb":[6626921,17868],"1acku00":[6644789,8150],"l4nvp9":[6652939,6896],"lr5ttk":[6659835,6426],"1ormj79":[6666261,10188],"19tk3li":[6676449,12382],"stkobr":[6688831,10344],"1i2qi7r":[6699175,7366],"8xgmu0":[6706541,7210],"skda1z":[6713751,11285],"kmeyyr":[6725036,10188],"1qys70":[6735224,10658],"1bm0djp":[6745882,5485],"10krhoh":[6751367,17241],"1rwceeg":[6768608,7523],"8ku2of":[6776131,9247],"okrc1k":[6785378,11285],"1uuywdb":[6796663,7523],"jrqxx9":[6804186,10971],"1dtdk4h":[6815157,6112],"19cyfsk":[6821269,9874],"1gvcaor":[6831143,13949],"1tu6jtu":[6845092,8777],"fnygkj":[6853869,9561],"ow7ixf":[6863430,9090],"13vmfcw":[6872520,10658],"3w3hul":[6883178,20532],"o70g4a":[6903710,10344],"1msh8jg":[6914054,17241],"yi8cj4":[6931295,10971],"1g5t04e":[6942266,9404],"xdr71r":[6951670,10031],"wi74i4":[6961701,8463],"75oaek":[6970164,10501],"140li5y":[6980665,11755],"1gcdbjw":[6992420,9404],"1vqu8xm":[7001824,10814],"6tmqwr":[7012638,8620],"stlfpx":[7021258,20062],"13nr01u":[7041320,10501],"75dwsx":[7051821,14733],"dratyb":[7066554,13009],"1frw1vz":[7079563,12539],"192ckhq":[7092102,14576],"16hxcu2":[7106678,13792],"qmlkhb":[7120470,13949],"kz36bv":[7134419,13636],"48xipw":[7148055,13165],"qmn2a0":[7161220,13479],"1hly4dh":[7174699,13792],"vriiop":[7188491,13165],"1avrrze":[7201656,14263],"jwt9ce":[7215919,13792],"eatxkr":[7229711,14263],"1d29rsv":[7243974,13165],"19zxs0w":[7257139,14419],"av0qnw":[7271558,14890],"k868wi":[7286448,11912],"1ct2s5y":[7298360,14106],"1a7oibh":[7312466,8777],"1fu73hx":[7321243,9090]}};
 
 /* Verzeichnis der eingesprochenen Sätze – wird von stimme/master.py erzeugt. Nicht von Hand ändern. */
-var VoiceIndexF = {"file":"ela-41ad0f0c.mp3","size":7890533,"voice":"css10-hokuspokus","sr":22050,"map":{"s3d8qk":[0,23823],"c7t7yn":[23823,10814],"56ilmw":[34637,10971],"134m2fw":[45608,13009],"1vbkepj":[58617,10501],"1xx16cx":[69118,17868],"trb97a":[86986,23667],"enz73n":[110653,9561],"cb9ekt":[120214,13009],"hqrzpb":[133223,31347],"3z17h":[164570,12068],"1et3tb0":[176638,17711],"lksm0v":[194349,11285],"16qu1lr":[205634,18181],"k3d2wd":[223815,14890],"wceo0n":[238705,16770],"1sojoxp":[255475,7680],"14at10k":[263155,15830],"1t8t1fz":[278985,10501],"blenwk":[289486,22413],"1a589gx":[311899,14263],"1r2wwv1":[326162,11441],"1pr9mi8":[337603,22413],"1hdwgjc":[360016,14419],"uramjw":[374435,9090],"obe310":[383525,14419],"17wva7h":[397944,16457],"qwn4dv":[414401,19278],"1kcyh9s":[433679,15516],"nkxecy":[449195,15360],"ftxs7f":[464555,25704],"1jmjyx":[490259,11128],"1usry8z":[501387,10658],"wq858w":[512045,16143],"hhdau":[528188,15203],"1ifgab4":[543391,7053],"ll08cb":[550444,13792],"1a9cpif":[564236,12695],"8ee3c8":[576931,11128],"1nkh44c":[588059,17397],"9pga5d":[605456,28055],"1jxz3hg":[633511,14419],"1vz8z0t":[647930,18965],"zvepsk":[666895,9090],"rt2n49":[675985,11912],"1d5ueno":[687897,12382],"13ev2c0":[700279,17868],"h4enhp":[718147,10188],"1mgf8kp":[728335,32444],"yadgc2":[760779,11755],"d7bzto":[772534,8620],"4sfwjn":[781154,31974],"1eduyen":[813128,22256],"1wkfglx":[835384,12695],"1xq54wh":[848079,25077],"hwld5i":[873156,9561],"1fvka4z":[882717,10971],"2zonry":[893688,18024],"nz7wkp":[911712,18494],"24hvwx":[930206,15360],"s64rjb":[945566,9404],"2c8ubj":[954970,13792],"1j9ef5b":[968762,11598],"1r8z0c3":[980360,7836],"1nxokor":[988196,23980],"45xpyn":[1012176,11755],"1tkz7mu":[1023931,12852],"1rr8quy":[1036783,10344],"rpt65j":[1047127,13949],"1fp25ke":[1061076,9874],"1h4htrh":[1070950,21159],"4ybuw8":[1092109,18338],"ryyte5":[1110447,9717],"23xk68":[1120164,11598],"cllcc4":[1131762,7210],"bi8497":[1138972,14576],"lu8hsx":[1153548,15203],"f3nafs":[1168751,14890],"j5r0im":[1183641,20375],"1bb5wxo":[1204016,7993],"1efphde":[1212009,27272],"godikj":[1239281,12225],"1w0ioap":[1251506,28839],"161jtc":[1280345,15516],"x9cyrh":[1295861,13479],"8zqkof":[1309340,19592],"1ry1li3":[1328932,13636],"18pee0w":[1342568,15516],"mohyhy":[1358084,18651],"fhyfuc":[1376735,13479],"1rjvtea":[1390214,18651],"1xmgbkk":[1408865,17711],"ffpqgs":[1426576,17397],"7s7o38":[1443973,15360],"r5cimy":[1459333,9717],"18wsl9f":[1469050,8150],"16maepr":[1477200,8463],"1ldummk":[1485663,17084],"1170von":[1502747,18338],"11femqp":[1521085,17554],"1grhg9f":[1538639,21786],"9klxh6":[1560425,16143],"9jmgu1":[1576568,15360],"16fpm6u":[1591928,9561],"11ycq98":[1601489,11912],"1cxouob":[1613401,10031],"yebg52":[1623432,19748],"1gsxkgx":[1643180,12225],"7o7r4n":[1655405,18494],"1vkl841":[1673899,26018],"170w0ga":[1699917,17711],"1bwb9ae":[1717628,27742],"1d1hi1p":[1745370,23980],"1e3dwkg":[1769350,28212],"xs6qqa":[1797562,27742],"1jizrgs":[1825304,27272],"1l5d0h9":[1852576,26645],"18b87nb":[1879221,8620],"17x1doi":[1887841,17711],"5enu4j":[1905552,16614],"1dqln3x":[1922166,29936],"1bhuq2m":[1952102,16143],"1uhiyt6":[1968245,25704],"13e9dqx":[1993949,25391],"1rohkrg":[2019340,28369],"geex0e":[2047709,27428],"xsq5uw":[2075137,28369],"30jgih":[2103506,25391],"kkp46r":[2128897,9247],"1ewlilk":[2138144,17241],"uv0qmb":[2155385,18494],"v2inrx":[2173879,17241],"1jcjo7j":[2191120,18338],"2o40ty":[2209458,16927],"eec9cu":[2226385,7366],"du4nsw":[2233751,11598],"1fk8yfx":[2245349,15360],"slyvti":[2260709,14419],"j8d6wy":[2275128,10971],"uua1di":[2286099,27742],"1d08zzv":[2313841,10188],"5ehlmp":[2324029,11755],"m757dq":[2335784,14263],"1u0u6m3":[2350047,8307],"myb0w2":[2358354,32601],"1gkn8af":[2390955,13322],"1yxr2nl":[2404277,12539],"b4uwom":[2416816,10814],"i8rxjd":[2427630,19121],"1t7w539":[2446751,7836],"1r8i4j8":[2454587,14263],"2d1on":[2468850,11128],"so8eyf":[2479978,14576],"1vyvb13":[2494554,7993],"5q96qi":[2502547,26958],"1ekvi4l":[2529505,7993],"85spsl":[2537498,11441],"143dy2o":[2548939,9874],"2mbvbh":[2558813,22256],"zdsco8":[2581069,7053],"1sb8pel":[2588122,10658],"1jamm0i":[2598780,16143],"1gicy7c":[2614923,11128],"v3su7i":[2626051,25548],"yyq4ql":[2651599,11285],"4or8mu":[2662884,10814],"voufko":[2673698,14576],"z24kw5":[2688274,8307],"aifmac":[2696581,10658],"17tszcg":[2707239,13165],"19wlfwn":[2720404,11285],"8qce8p":[2731689,12852],"1tubqbm":[2744541,14733],"19v6blf":[2759274,14106],"1nsgebb":[2773380,13165],"1b9oz2x":[2786545,8150],"flq1hh":[2794695,15987],"h5klpv":[2810682,17554],"1y2c269":[2828236,15987],"o8yfkn":[2844223,14890],"pvpq8v":[2859113,11128],"w2r9zb":[2870241,26488],"1i5oyhy":[2896729,24294],"6vjrbk":[2921023,13009],"10w2f6w":[2934032,16143],"1cpg88g":[2950175,13165],"6f39ml":[2963340,15516],"1xii9ny":[2978856,9874],"4v9h4c":[2988730,16300],"1ssbn58":[3005030,13009],"lqrczi":[3018039,15360],"z9w348":[3033399,14263],"1ckoqyi":[3047662,9247],"v6wm2w":[3056909,12382],"v9tefa":[3069291,13949],"1v622t1":[3083240,15830],"1ok6s4j":[3099070,16770],"1eyim21":[3115840,15360],"1sachs1":[3131200,19592],"x3o915":[3150792,22256],"hb8156":[3173048,25861],"gx0m3j":[3198909,21629],"1heo915":[3220538,16143],"14sifg8":[3236681,20532],"ug8cqy":[3257213,17554],"vuu10k":[3274767,19905],"1egk0jb":[3294672,22726],"10kt90j":[3317398,14106],"5sjx6d":[3331504,13949],"4102b3":[3345453,13636],"1tsb7hb":[3359089,15516],"k6r3h3":[3374605,17868],"1v83qhq":[3392473,27428],"28r537":[3419901,21472],"hkhv3n":[3441373,15516],"w5xtlm":[3456889,23510],"1vao4cg":[3480399,16927],"1o2uan2":[3497326,20375],"17vwj5e":[3517701,19592],"1r5nean":[3537293,18651],"anlqn5":[3555944,15987],"u5umy3":[3571931,18181],"1871803":[3590112,14106],"1k7m17n":[3604218,23040],"6yxaqy":[3627258,25548],"t4shof":[3652806,20062],"1d5xhgn":[3672868,16457],"1mj2wlq":[3689325,21629],"12cj444":[3710954,22726],"10dx2eq":[3733680,19121],"1fqcsba":[3752801,19278],"1jc2e9n":[3772079,12382],"ohbhd":[3784461,7680],"11ytr9o":[3792141,10344],"8l35gm":[3802485,8934],"onysqn":[3811419,15516],"11khij2":[3826935,11912],"1gzctj9":[3838847,11285],"vtndic":[3850132,12695],"16uajfi":[3862827,12068],"15gciyn":[3874895,12225],"1vbipn0":[3887120,14890],"19e3g1n":[3902010,10188],"1018bhx":[3912198,12539],"18k4myq":[3924737,10188],"1sax5if":[3934925,12225],"ye0pm2":[3947150,12852],"uzs3it":[3960002,13322],"v9rp7s":[3973324,13322],"1tutzye":[3986646,11128],"1wwpml3":[3997774,11755],"1guxq7f":[4009529,14419],"1ex3bcb":[4023948,11598],"1e34i9e":[4035546,13009],"klk2dg":[4048555,10971],"i3nn4p":[4059526,10501],"fdnx05":[4070027,11128],"vqv7w9":[4081155,12225],"y8rn50":[4093380,13165],"1r7kbnu":[4106545,13165],"1nlphn7":[4119710,10814],"mp6bo7":[4130524,14263],"1lcx27x":[4144787,15046],"1h730tc":[4159833,16770],"1i9lpp2":[4176603,15673],"1gdi9mz":[4192276,12539],"1lbhcbr":[4204815,10031],"1nfq96p":[4214846,11441],"rv0qsj":[4226287,13636],"omemdm":[4239923,11912],"1w2y0e9":[4251835,11598],"129soa0":[4263433,11598],"q8q0oc":[4275031,24450],"1bg5uoi":[4299481,9717],"1p65cgj":[4309198,18181],"vfl7ee":[4327379,13792],"1ifupun":[4341171,19435],"4j1p8s":[4360606,20062],"16wa387":[4380668,13792],"d3t70k":[4394460,17397],"1rlwzwc":[4411857,19121],"1uz91s0":[4430978,7993],"1ohnkhd":[4438971,20219],"1bopr42":[4459190,11755],"1j21jsv":[4470945,37459],"1ldw87e":[4508404,8777],"q1j0sj":[4517181,25391],"1fd4l8h":[4542572,17711],"5owxnw":[4560283,18651],"xyriuq":[4578934,18494],"484rw2":[4597428,17554],"1jq1eku":[4614982,19592],"1gdvegs":[4634574,22413],"1rgp2gx":[4656987,12225],"16tcowc":[4669212,16614],"c2u7d5":[4685826,19435],"bjpi4s":[4705261,18808],"6ob6qo":[4724069,25077],"7s9409":[4749146,21159],"1dk5ai6":[4770305,19435],"ac4q91":[4789740,18808],"1oq5d1g":[4808548,18808],"1i59dbf":[4827356,20219],"1dmt5l1":[4847575,24607],"119omzd":[4872182,20532],"1vpiixq":[4892714,19748],"lbb44v":[4912462,18965],"nltch1":[4931427,16770],"1llwgvv":[4948197,17554],"i6bvfs":[4965751,21629],"kic2cg":[4987380,16770],"2gvbw4":[5004150,19435],"1caw3zf":[5023585,18338],"1ofh1p8":[5041923,20689],"17j7kj4":[5062612,16770],"sorz4":[5079382,21629],"bndbrc":[5101011,16143],"1q1mgrv":[5117154,10658],"1csdrrx":[5127812,15516],"1ip9zdv":[5143328,13949],"uovqpg":[5157277,12695],"1keeqhl":[5169972,15360],"1b2b0y9":[5185332,23040],"yk0vln":[5208372,16457],"19fha9f":[5224829,11598],"1f7mmjb":[5236427,11285],"pekkm4":[5247712,19278],"1baoq2i":[5266990,20219],"1qipuvs":[5287209,16457],"12jxvhu":[5303666,11128],"17569h9":[5314794,24921],"dp1slb":[5339715,16457],"it6ioh":[5356172,9090],"1c6k7qa":[5365262,24764],"xli3o1":[5390026,33228],"1ewtqs8":[5423254,22099],"1b2gtip":[5445353,23823],"h77snn":[5469176,10344],"1y1pvei":[5479520,19748],"oh3www":[5499268,10971],"p2ngy9":[5510239,24137],"1u5598j":[5534376,22726],"81l52z":[5557102,17554],"1rsisyy":[5574656,15203],"1fdwxk6":[5589859,23353],"yc81w6":[5613212,22413],"1kgqje4":[5635625,23510],"4akawz":[5659135,15830],"jvefdu":[5674965,22099],"x4p99v":[5697064,24764],"vfz4t8":[5721828,21316],"szvj0w":[5743144,26018],"wie75d":[5769162,44826],"g57sw7":[5813988,30093],"1ngaheq":[5844081,14419],"1h30g7m":[5858500,21943],"14insij":[5880443,10344],"179zsum":[5890787,25861],"1euv3tk":[5916648,13009],"kygzs7":[5929657,9247],"1frhv9u":[5938904,16927],"13ykwu":[5955831,9404],"11izrzy":[5965235,17241],"8plw7k":[5982476,13949],"i1jse":[5996425,16614],"7y44eu":[6013039,7210],"1d9ej1q":[6020249,10344],"1k4lf3f":[6030593,22099],"1apkw7c":[6052692,22099],"1hb34hd":[6074791,13322],"1mpayro":[6088113,15830],"lxkoww":[6103943,9874],"d3i2nq":[6113817,15046],"h0x0ay":[6128863,30406],"18goiai":[6159269,18651],"1kukl9p":[6177920,14733],"1c3kre6":[6192653,12382],"13ou45l":[6205035,15360],"1okr2gz":[6220395,26018],"1eqish0":[6246413,16614],"1bmysa5":[6263027,15516],"r8uyjl":[6278543,11285],"1jz309d":[6289828,14576],"1h4cvfd":[6304404,13322],"1np0b1d":[6317726,13009],"1rb1oi4":[6330735,9247],"1lr0o3":[6339982,25861],"my2vg7":[6365843,13479],"skjtag":[6379322,13009],"16a5iu1":[6392331,14890],"1lr336k":[6407221,13479],"4czhib":[6420700,8463],"18znw61":[6429163,26488],"1dqroqp":[6455651,12225],"1yqwgou":[6467876,13322],"eke4b":[6481198,16300],"cwadwb":[6497498,10501],"17xzx7j":[6507999,30093],"wils0f":[6538092,14106],"199iw68":[6552198,17711],"uz9z11":[6569909,19592],"sn08gm":[6589501,11755],"jcwsl":[6601256,14576],"1adpdo5":[6615832,7993],"ootz40":[6623825,17711],"1e0zn3m":[6641536,11441],"1giijaw":[6652977,11598],"1wot0vu":[6664575,21316],"4ad56a":[6685891,8463],"1s2kvbi":[6694354,12852],"l0dj7a":[6707206,11285],"7tb35e":[6718491,33071],"1cbrdgx":[6751562,12068],"9ft8eg":[6763630,7993],"93qupi":[6771623,18338],"1x77ekm":[6789961,13792],"pd46j6":[6803753,11755],"13ryzgz":[6815508,19905],"xcirp2":[6835413,26958],"1fwb9tc":[6862371,29152],"1gkej2i":[6891523,27428],"dc9lze":[6918951,26958],"yuhh0n":[6945909,13009],"1cgdhyb":[6958918,20532],"1acku00":[6979450,13165],"l4nvp9":[6992615,8777],"lr5ttk":[7001392,11441],"1ormj79":[7012833,11912],"19tk3li":[7024745,11912],"stkobr":[7036657,12695],"1i2qi7r":[7049352,9717],"8xgmu0":[7059069,9090],"skda1z":[7068159,21629],"kmeyyr":[7089788,11128],"1qys70":[7100916,13165],"1bm0djp":[7114081,8463],"10krhoh":[7122544,20845],"1rwceeg":[7143389,13165],"8ku2of":[7156554,11441],"okrc1k":[7167995,11285],"1uuywdb":[7179280,14890],"jrqxx9":[7194170,13479],"1dtdk4h":[7207649,7680],"19cyfsk":[7215329,18808],"1gvcaor":[7234137,13479],"1tu6jtu":[7247616,15203],"fnygkj":[7262819,12382],"ow7ixf":[7275201,14890],"13vmfcw":[7290091,12695],"3w3hul":[7302786,20375],"o70g4a":[7323161,16614],"1msh8jg":[7339775,19435],"yi8cj4":[7359210,11755],"1g5t04e":[7370965,16457],"xdr71r":[7387422,10971],"wi74i4":[7398393,10814],"75oaek":[7409207,11598],"140li5y":[7420805,17711],"1gcdbjw":[7438516,14106],"1vqu8xm":[7452622,13636],"6tmqwr":[7466258,14576],"stlfpx":[7480834,21943],"13nr01u":[7502777,15360],"75dwsx":[7518137,18808],"dratyb":[7536945,21629],"1frw1vz":[7558574,17711],"192ckhq":[7576285,19905],"16hxcu2":[7596190,18808],"qmlkhb":[7614998,21316],"kz36bv":[7636314,16300],"48xipw":[7652614,16457],"qmn2a0":[7669071,17397],"1hly4dh":[7686468,15516],"vriiop":[7701984,15046],"1avrrze":[7717030,19121],"jwt9ce":[7736151,20689],"eatxkr":[7756840,21786],"1d29rsv":[7778626,25077],"19zxs0w":[7803703,19905],"av0qnw":[7823608,14263],"k868wi":[7837871,13949],"1ct2s5y":[7851820,15830],"1a7oibh":[7867650,12539],"1fu73hx":[7880189,10344]}};
+var VoiceIndexF = {"file":"ela-60394349.mp3","size":9739821,"voice":"css10-hokuspokus","sr":22050,"map":{"s3d8qk":[0,23823],"c7t7yn":[23823,10814],"56ilmw":[34637,10971],"134m2fw":[45608,13009],"1vbkepj":[58617,10501],"1xx16cx":[69118,17868],"trb97a":[86986,23667],"enz73n":[110653,9561],"cb9ekt":[120214,13009],"hqrzpb":[133223,31347],"3z17h":[164570,12068],"1et3tb0":[176638,17711],"1ratbne":[194349,11441],"1rdvdkx":[205790,18338],"1jql4bo":[224128,8150],"1jifaam":[232278,14263],"y1uy8k":[246541,17397],"16qu1lr":[263938,18181],"k3d2wd":[282119,14890],"wceo0n":[297009,16770],"1sojoxp":[313779,7680],"14at10k":[321459,15830],"1t8t1fz":[337289,10501],"blenwk":[347790,22413],"1a589gx":[370203,14263],"1r2wwv1":[384466,11441],"1pr9mi8":[395907,22413],"1hdwgjc":[418320,14419],"uramjw":[432739,9090],"obe310":[441829,14419],"17wva7h":[456248,16457],"qwn4dv":[472705,19278],"1kcyh9s":[491983,15516],"nkxecy":[507499,15360],"ftxs7f":[522859,25704],"1jmjyx":[548563,11128],"1usry8z":[559691,10658],"wq858w":[570349,16143],"hhdau":[586492,15203],"1ifgab4":[601695,7053],"ll08cb":[608748,13792],"1a9cpif":[622540,12695],"8ee3c8":[635235,11128],"1nkh44c":[646363,17397],"9pga5d":[663760,28055],"1jxz3hg":[691815,14419],"1vz8z0t":[706234,18965],"zvepsk":[725199,9090],"rt2n49":[734289,11912],"1d5ueno":[746201,12382],"13ev2c0":[758583,17868],"h4enhp":[776451,10188],"1mgf8kp":[786639,32444],"yadgc2":[819083,11755],"d7bzto":[830838,8620],"4sfwjn":[839458,31974],"1eduyen":[871432,22256],"1wkfglx":[893688,12695],"1xq54wh":[906383,25077],"hwld5i":[931460,9561],"1fvka4z":[941021,10971],"2zonry":[951992,18024],"nz7wkp":[970016,18494],"24hvwx":[988510,15360],"s64rjb":[1003870,9404],"2c8ubj":[1013274,13792],"1j9ef5b":[1027066,11598],"1r8z0c3":[1038664,7836],"1nxokor":[1046500,23980],"45xpyn":[1070480,11755],"1tkz7mu":[1082235,12852],"1rr8quy":[1095087,10344],"rpt65j":[1105431,13949],"1fp25ke":[1119380,9874],"1h4htrh":[1129254,21159],"4ybuw8":[1150413,18338],"ryyte5":[1168751,9717],"23xk68":[1178468,11598],"cllcc4":[1190066,7210],"bi8497":[1197276,14576],"lu8hsx":[1211852,15203],"f3nafs":[1227055,14890],"j5r0im":[1241945,20375],"1bb5wxo":[1262320,7993],"1efphde":[1270313,27272],"godikj":[1297585,12225],"1w0ioap":[1309810,28839],"161jtc":[1338649,15516],"x9cyrh":[1354165,13479],"8zqkof":[1367644,19592],"1ry1li3":[1387236,13636],"18pee0w":[1400872,15516],"mohyhy":[1416388,18651],"fhyfuc":[1435039,13479],"1rjvtea":[1448518,18651],"1xmgbkk":[1467169,17711],"ffpqgs":[1484880,17397],"7s7o38":[1502277,15360],"r5cimy":[1517637,9717],"18wsl9f":[1527354,8150],"16maepr":[1535504,8463],"1ldummk":[1543967,17084],"1170von":[1561051,18338],"11femqp":[1579389,17554],"1grhg9f":[1596943,21786],"9klxh6":[1618729,16143],"9jmgu1":[1634872,15360],"16fpm6u":[1650232,9561],"11ycq98":[1659793,11912],"1cxouob":[1671705,10031],"yebg52":[1681736,19748],"1gsxkgx":[1701484,12225],"7o7r4n":[1713709,18494],"1vkl841":[1732203,26018],"170w0ga":[1758221,17711],"1bwb9ae":[1775932,27742],"1d1hi1p":[1803674,23980],"1e3dwkg":[1827654,28212],"xs6qqa":[1855866,27742],"1jizrgs":[1883608,27272],"1l5d0h9":[1910880,26645],"18b87nb":[1937525,8620],"17x1doi":[1946145,17711],"5enu4j":[1963856,16614],"1dqln3x":[1980470,29936],"1bhuq2m":[2010406,16143],"1uhiyt6":[2026549,25704],"13e9dqx":[2052253,25391],"1rohkrg":[2077644,28369],"geex0e":[2106013,27428],"xsq5uw":[2133441,28369],"30jgih":[2161810,25391],"kkp46r":[2187201,9247],"1ewlilk":[2196448,17241],"uv0qmb":[2213689,18494],"v2inrx":[2232183,17241],"1jcjo7j":[2249424,18338],"2o40ty":[2267762,16927],"eec9cu":[2284689,7366],"du4nsw":[2292055,11598],"1fk8yfx":[2303653,15360],"slyvti":[2319013,14419],"j8d6wy":[2333432,10971],"uua1di":[2344403,27742],"1d08zzv":[2372145,10188],"5ehlmp":[2382333,11755],"m757dq":[2394088,14263],"1u0u6m3":[2408351,8307],"myb0w2":[2416658,32601],"1gkn8af":[2449259,13322],"1yxr2nl":[2462581,12539],"b4uwom":[2475120,10814],"i8rxjd":[2485934,19121],"1t7w539":[2505055,7836],"1r8i4j8":[2512891,14263],"2d1on":[2527154,11128],"so8eyf":[2538282,14576],"1vyvb13":[2552858,7993],"5q96qi":[2560851,26958],"1ekvi4l":[2587809,7993],"85spsl":[2595802,11441],"143dy2o":[2607243,9874],"2mbvbh":[2617117,22256],"zdsco8":[2639373,7053],"1sb8pel":[2646426,10658],"1jamm0i":[2657084,16143],"1gicy7c":[2673227,11128],"v3su7i":[2684355,25548],"yyq4ql":[2709903,11285],"4or8mu":[2721188,10814],"voufko":[2732002,14576],"z24kw5":[2746578,8307],"aifmac":[2754885,10658],"17tszcg":[2765543,13165],"19wlfwn":[2778708,11285],"8qce8p":[2789993,12852],"1tubqbm":[2802845,14733],"19v6blf":[2817578,14106],"1nsgebb":[2831684,13165],"1b9oz2x":[2844849,8150],"flq1hh":[2852999,15987],"h5klpv":[2868986,17554],"1y2c269":[2886540,15987],"o8yfkn":[2902527,14890],"pvpq8v":[2917417,11128],"w2r9zb":[2928545,26488],"1i5oyhy":[2955033,24294],"6vjrbk":[2979327,13009],"10w2f6w":[2992336,16143],"1cpg88g":[3008479,13165],"6f39ml":[3021644,15516],"1xii9ny":[3037160,9874],"4v9h4c":[3047034,16300],"1ssbn58":[3063334,13009],"lqrczi":[3076343,15360],"z9w348":[3091703,14263],"1ckoqyi":[3105966,9247],"v6wm2w":[3115213,12382],"v9tefa":[3127595,13949],"1v622t1":[3141544,15830],"1ok6s4j":[3157374,16770],"1eyim21":[3174144,15360],"1sachs1":[3189504,19592],"x3o915":[3209096,22256],"hb8156":[3231352,25861],"gx0m3j":[3257213,21629],"1heo915":[3278842,16143],"14sifg8":[3294985,20532],"ug8cqy":[3315517,17554],"vuu10k":[3333071,19905],"1egk0jb":[3352976,22726],"10kt90j":[3375702,14106],"5sjx6d":[3389808,13949],"4102b3":[3403757,13636],"1tsb7hb":[3417393,15516],"k6r3h3":[3432909,17868],"1v83qhq":[3450777,27428],"28r537":[3478205,21472],"hkhv3n":[3499677,15516],"w5xtlm":[3515193,23510],"1vao4cg":[3538703,16927],"1o2uan2":[3555630,20375],"17vwj5e":[3576005,19592],"1r5nean":[3595597,18651],"anlqn5":[3614248,15987],"u5umy3":[3630235,18181],"1871803":[3648416,14106],"1k7m17n":[3662522,23040],"6yxaqy":[3685562,25548],"t4shof":[3711110,20062],"1d5xhgn":[3731172,16457],"1mj2wlq":[3747629,21629],"12cj444":[3769258,22726],"10dx2eq":[3791984,19121],"1fqcsba":[3811105,19278],"1jc2e9n":[3830383,12382],"ohbhd":[3842765,7680],"11ytr9o":[3850445,10344],"8l35gm":[3860789,8934],"onysqn":[3869723,15516],"11khij2":[3885239,11912],"1gzctj9":[3897151,11285],"vtndic":[3908436,12695],"16uajfi":[3921131,12068],"15gciyn":[3933199,12225],"1vbipn0":[3945424,14890],"19e3g1n":[3960314,10188],"1018bhx":[3970502,12539],"18k4myq":[3983041,10188],"1sax5if":[3993229,12225],"ye0pm2":[4005454,12852],"uzs3it":[4018306,13322],"v9rp7s":[4031628,13322],"1tutzye":[4044950,11128],"1wwpml3":[4056078,11755],"1guxq7f":[4067833,14419],"1ex3bcb":[4082252,11598],"1e34i9e":[4093850,13009],"klk2dg":[4106859,10971],"i3nn4p":[4117830,10501],"fdnx05":[4128331,11128],"vqv7w9":[4139459,12225],"y8rn50":[4151684,13165],"1r7kbnu":[4164849,13165],"1nlphn7":[4178014,10814],"mp6bo7":[4188828,14263],"1lcx27x":[4203091,15046],"1h730tc":[4218137,16770],"1i9lpp2":[4234907,15673],"1gdi9mz":[4250580,12539],"1lbhcbr":[4263119,10031],"1nfq96p":[4273150,11441],"rv0qsj":[4284591,13636],"omemdm":[4298227,11912],"1w2y0e9":[4310139,11598],"129soa0":[4321737,11598],"q8q0oc":[4333335,24450],"1bg5uoi":[4357785,9717],"1p65cgj":[4367502,18181],"vfl7ee":[4385683,13792],"1ifupun":[4399475,19435],"4j1p8s":[4418910,20062],"16wa387":[4438972,13792],"d3t70k":[4452764,17397],"1rlwzwc":[4470161,19121],"1uz91s0":[4489282,7993],"1ohnkhd":[4497275,20219],"1bopr42":[4517494,11755],"1j21jsv":[4529249,37459],"1ldw87e":[4566708,8777],"q1j0sj":[4575485,25391],"1v12o0p":[4600876,20845],"7b8rqh":[4621721,27899],"18foq8i":[4649620,29936],"1ujewge":[4679556,30093],"jl16hk":[4709649,28682],"1wrvr21":[4738331,17868],"1fvwej":[4756199,7680],"bdp9qh":[4763879,8463],"1gikq4g":[4772342,21316],"1dbjvbh":[4793658,18965],"u3f50l":[4812623,17397],"1l214nw":[4830020,11285],"viqimo":[4841305,12852],"611j7l":[4854157,11441],"luqt1z":[4865598,10501],"t175o5":[4876099,12539],"1nh1oxm":[4888638,13165],"1327wnk":[4901803,12539],"1f4hwqe":[4914342,11912],"1bh8yva":[4926254,12225],"qla23b":[4938479,23823],"1omq32q":[4962302,21472],"147aiag":[4983774,20845],"7mw1mw":[5004619,20845],"1hz5oy6":[5025464,34011],"1jwdbun":[5059475,27742],"mk3iyv":[5087217,11598],"1t89cml":[5098815,31974],"ky6b8l":[5130789,34011],"1wprp9a":[5164800,28682],"lqvujd":[5193482,34168],"1ac49vs":[5227650,26174],"fp7314":[5253824,26488],"voynob":[5280312,20375],"9fl667":[5300687,14890],"1bn62oe":[5315577,27272],"rps03":[5342849,15673],"m8p9lq":[5358522,12695],"11f6ryk":[5371217,35265],"yyycs6":[5406482,30720],"1yc6cps":[5437202,18965],"42ale2":[5456167,23040],"5zspum":[5479207,19278],"11di6sk":[5498485,17084],"cik1mf":[5515569,42788],"l43cfa":[5558357,25704],"1fhloee":[5584061,27899],"1poh5os":[5611960,9247],"95w7dg":[5621207,14576],"55bg4e":[5635783,14263],"1pb2nq1":[5650046,10501],"xuvg50":[5660547,34011],"vdprpb":[5694558,31190],"lbedno":[5725748,14576],"1xsn3c1":[5740324,13009],"dy9t7u":[5753333,15516],"1jc92me":[5768849,18808],"14yw4qe":[5787657,20845],"14na62g":[5808502,11912],"6pk2dz":[5820414,25704],"dnxd6y":[5846118,26018],"1fgltb1":[5872136,14263],"j38xbu":[5886399,16300],"wdfpyg":[5902699,18338],"1t80ilc":[5921037,26958],"nqwelc":[5947995,23510],"3z39kn":[5971505,13479],"zr07mk":[5984984,22883],"7i4uwe":[6007867,15046],"17k6yvz":[6022913,15830],"11iqjpu":[6038743,15360],"bo6gqj":[6054103,17084],"1k5ll7y":[6071187,13792],"1iuwn0d":[6084979,25861],"1ur78hv":[6110840,13949],"dbjmvb":[6124789,20219],"154iiyh":[6145008,12852],"ir8ctv":[6157860,13009],"1ywup4n":[6170869,19121],"nydw3o":[6189990,7836],"7ouk1m":[6197826,10501],"7uqb8b":[6208327,8620],"1xomyos":[6216947,17397],"96frmx":[6234344,9874],"1p20y92":[6244218,20375],"rycum5":[6264593,19748],"bx3wgn":[6284341,11755],"v50i3f":[6296096,15987],"14dv303":[6312083,18338],"bowqrr":[6330421,26801],"sw0q9o":[6357222,26958],"7t9qb2":[6384180,10658],"1fd4l8h":[6394838,17711],"5owxnw":[6412549,18651],"xyriuq":[6431200,18494],"484rw2":[6449694,17554],"1jq1eku":[6467248,19592],"1gdvegs":[6486840,22413],"1rgp2gx":[6509253,12225],"16tcowc":[6521478,16614],"c2u7d5":[6538092,19435],"bjpi4s":[6557527,18808],"6ob6qo":[6576335,25077],"7s9409":[6601412,21159],"1dk5ai6":[6622571,19435],"ac4q91":[6642006,18808],"1oq5d1g":[6660814,18808],"1i59dbf":[6679622,20219],"1dmt5l1":[6699841,24607],"119omzd":[6724448,20532],"1vpiixq":[6744980,19748],"lbb44v":[6764728,18965],"nltch1":[6783693,16770],"1llwgvv":[6800463,17554],"i6bvfs":[6818017,21629],"kic2cg":[6839646,16770],"2gvbw4":[6856416,19435],"1caw3zf":[6875851,18338],"1ofh1p8":[6894189,20689],"17j7kj4":[6914878,16770],"sorz4":[6931648,21629],"bndbrc":[6953277,16143],"1q1mgrv":[6969420,10658],"1csdrrx":[6980078,15516],"1ip9zdv":[6995594,13949],"uovqpg":[7009543,12695],"1keeqhl":[7022238,15360],"1b2b0y9":[7037598,23040],"yk0vln":[7060638,16457],"19fha9f":[7077095,11598],"1f7mmjb":[7088693,11285],"pekkm4":[7099978,19278],"1baoq2i":[7119256,20219],"1qipuvs":[7139475,16457],"12jxvhu":[7155932,11128],"17569h9":[7167060,24921],"dp1slb":[7191981,16457],"it6ioh":[7208438,9090],"1c6k7qa":[7217528,24764],"xli3o1":[7242292,33228],"1ewtqs8":[7275520,22099],"1b2gtip":[7297619,23823],"h77snn":[7321442,10344],"1y1pvei":[7331786,19748],"oh3www":[7351534,10971],"p2ngy9":[7362505,24137],"1u5598j":[7386642,22726],"81l52z":[7409368,17554],"1rsisyy":[7426922,15203],"1fdwxk6":[7442125,23353],"yc81w6":[7465478,22413],"1kgqje4":[7487891,23510],"4akawz":[7511401,15830],"jvefdu":[7527231,22099],"x4p99v":[7549330,24764],"vfz4t8":[7574094,21316],"szvj0w":[7595410,26018],"wie75d":[7621428,44826],"g57sw7":[7666254,30093],"1ngaheq":[7696347,14419],"1h30g7m":[7710766,21943],"14insij":[7732709,10344],"179zsum":[7743053,25861],"1euv3tk":[7768914,13009],"kygzs7":[7781923,9247],"1frhv9u":[7791170,16927],"13ykwu":[7808097,9404],"11izrzy":[7817501,17241],"8plw7k":[7834742,13949],"i1jse":[7848691,16614],"7y44eu":[7865305,7210],"1d9ej1q":[7872515,10344],"1k4lf3f":[7882859,22099],"1apkw7c":[7904958,22099],"1hb34hd":[7927057,13322],"1mpayro":[7940379,15830],"lxkoww":[7956209,9874],"d3i2nq":[7966083,15046],"h0x0ay":[7981129,30406],"18goiai":[8011535,18651],"1kukl9p":[8030186,14733],"1c3kre6":[8044919,12382],"13ou45l":[8057301,14106],"1okr2gz":[8071407,26018],"1eqish0":[8097425,16614],"1bmysa5":[8114039,15516],"r8uyjl":[8129555,11285],"1jz309d":[8140840,14576],"1h4cvfd":[8155416,13322],"1np0b1d":[8168738,13009],"1rb1oi4":[8181747,9247],"1lr0o3":[8190994,25861],"my2vg7":[8216855,13479],"skjtag":[8230334,13009],"16a5iu1":[8243343,14890],"1lr336k":[8258233,13479],"4czhib":[8271712,8463],"18znw61":[8280175,26488],"1dqroqp":[8306663,12225],"1yqwgou":[8318888,13322],"eke4b":[8332210,16300],"cwadwb":[8348510,10501],"17xzx7j":[8359011,30093],"wils0f":[8389104,14106],"199iw68":[8403210,17711],"uz9z11":[8420921,19592],"sn08gm":[8440513,11755],"jcwsl":[8452268,14576],"1adpdo5":[8466844,7993],"ootz40":[8474837,17711],"1e0zn3m":[8492548,11441],"1giijaw":[8503989,11598],"1wot0vu":[8515587,21316],"4ad56a":[8536903,8463],"1s2kvbi":[8545366,12852],"l0dj7a":[8558218,11285],"7tb35e":[8569503,33071],"1cbrdgx":[8602574,12068],"9ft8eg":[8614642,7993],"93qupi":[8622635,18338],"1x77ekm":[8640973,13792],"pd46j6":[8654765,11755],"13ryzgz":[8666520,19905],"xcirp2":[8686425,26958],"1fwb9tc":[8713383,29152],"1gkej2i":[8742535,27428],"dc9lze":[8769963,26958],"yuhh0n":[8796921,13009],"1cgdhyb":[8809930,20532],"1acku00":[8830462,13165],"l4nvp9":[8843627,8777],"lr5ttk":[8852404,11441],"1ormj79":[8863845,11912],"19tk3li":[8875757,11912],"stkobr":[8887669,12695],"1i2qi7r":[8900364,9717],"8xgmu0":[8910081,9090],"skda1z":[8919171,21629],"kmeyyr":[8940800,11128],"1qys70":[8951928,13165],"1bm0djp":[8965093,6739],"10krhoh":[8971832,20845],"1rwceeg":[8992677,13165],"8ku2of":[9005842,11441],"okrc1k":[9017283,11285],"1uuywdb":[9028568,14890],"jrqxx9":[9043458,13479],"1dtdk4h":[9056937,7680],"19cyfsk":[9064617,18808],"1gvcaor":[9083425,13479],"1tu6jtu":[9096904,15203],"fnygkj":[9112107,12382],"ow7ixf":[9124489,14890],"13vmfcw":[9139379,12695],"3w3hul":[9152074,20375],"o70g4a":[9172449,16614],"1msh8jg":[9189063,19435],"yi8cj4":[9208498,11755],"1g5t04e":[9220253,16457],"xdr71r":[9236710,10971],"wi74i4":[9247681,10814],"75oaek":[9258495,11598],"140li5y":[9270093,17711],"1gcdbjw":[9287804,14106],"1vqu8xm":[9301910,13636],"6tmqwr":[9315546,14576],"stlfpx":[9330122,21943],"13nr01u":[9352065,15360],"75dwsx":[9367425,18808],"dratyb":[9386233,21629],"1frw1vz":[9407862,17711],"192ckhq":[9425573,19905],"16hxcu2":[9445478,18808],"qmlkhb":[9464286,21316],"kz36bv":[9485602,16300],"48xipw":[9501902,16457],"qmn2a0":[9518359,17397],"1hly4dh":[9535756,15516],"vriiop":[9551272,15046],"1avrrze":[9566318,19121],"jwt9ce":[9585439,20689],"eatxkr":[9606128,21786],"1d29rsv":[9627914,25077],"19zxs0w":[9652991,19905],"av0qnw":[9672896,14263],"k868wi":[9687159,13949],"1ct2s5y":[9701108,15830],"1a7oibh":[9716938,12539],"1fu73hx":[9729477,10344]}};
 
 /* =========================================================
    Merken, Töne, Vorlesen, Computer-Gegner im Hintergrund.
@@ -2103,7 +2275,8 @@ function fresh() {
   return {
     v: 1, gifts: [], neu: [], gold: 0,
     equip: { board: 'zauberwald', u: 'schnee', d: 'gruen', hatU: '', hatD: '' },
-    set: { voice: true, sound: true, symbols: false, stimme: 'm' },
+    set: { voice: true, sound: true, symbols: false, stimme: 'm', tipps: true },
+    tipp: 0,                           /* welcher Tipp vor dem nächsten Spiel dran ist */
     wins: [0, 0, 0, 0, 0], school: {}, seen: {}, know: {}, save: null,
     last: { level: 1, human: 0, seat: 'neben', help: true }
   };
@@ -2637,7 +2810,11 @@ P.word = function (sq, text, color) {
   el.style.setProperty('--r', (Math.random() * 20 - 10).toFixed(0) + 'deg'); el.style.setProperty('--c', color || '#ffd24d');
 };
 P.points = function (sq, text) { const p = this.sqPt(sq); this.fx('punkte', p.x, p.y - this.sq * 0.4, text, 1150); };
-P.bubble = function (sq, text) { const p = this.headPt(sq); this.fx('blase', p.x, p.y - this.sq * 0.5, text, 2300); };
+/* Ein Schildchen über einer Figur, das stehen bleibt (zum Beispiel: wie viele Punkte sie wert ist) */
+P.label = function (sq, text) { const p = this.headPt(sq); this.fx('wertschild', p.x, p.y - this.sq * 0.32, text, 0); };
+P.clearLabels = function () { this.hud.querySelectorAll('.wertschild').forEach(e => e.remove()); };
+/* kurz: Die Blase verschwindet schneller (wenn mehrere Figuren nacheinander etwas sagen) */
+P.bubble = function (sq, text, kurz) { const p = this.headPt(sq); this.fx(kurz ? 'blase kurz' : 'blase', p.x, p.y - this.sq * 0.5, text, kurz ? 1150 : 2300); };
 P.bubbleAt = function (x, y, text) { this.fx('blase', x, y, text, 2300); };
 P.shake = function () { if (calm) return; this.stage.classList.remove('wackel'); void this.stage.offsetWidth; this.stage.classList.add('wackel'); };
 /* Ganz nah ran an ein Feld (Schachmatt in Zeitlupe) */
@@ -2810,7 +2987,7 @@ P.setMarks = function (group, list) {
   this.topDots();
 };
 /* Die Punkte für mögliche Züge liegen über den Figuren – so sieht man sie immer und kann sie antippen. */
-const OBEN = { 'm-mv': 'mv', 'm-dmv': 'dmv', 'm-foe': 'foe' };
+const OBEN = { 'm-mv': 'mv', 'm-dmv': 'dmv', 'm-foe': 'foe', 'm-no': 'no' };
 P.topDots = function () {
   if (!this.elDots) return;
   let s = '';
@@ -2821,7 +2998,8 @@ P.topDots = function () {
     s += '<i class="pkt ' + c + '" style="left:' + p.x.toFixed(1) + 'px;top:' + p.y.toFixed(1) + 'px;width:' + w.toFixed(1) + 'px;height:' + (w * (0.55 + 0.45 * flat)).toFixed(1) + 'px"></i>';
     /* das Feld direkt davor (näher am Kind) merken */
     const q = this.xy(m[0]);
-    if (!this.flat && q.y < 7) davor[(this.flip ? 7 - q.x : q.x) + (this.flip ? q.y + 1 : 6 - q.y) * 16] = 1;
+    /* (nicht bei den roten Kreuzen: Da soll der König gut zu sehen bleiben) */
+    if (c !== 'no' && !this.flat && q.y < 7) davor[(this.flip ? 7 - q.x : q.x) + (this.flip ? q.y + 1 : 6 - q.y) * 16] = 1;
   });
   this.elDots.innerHTML = s;
   /* Steht vor einem Zielfeld eine Figur, wird sie durchsichtig – sonst sähe es aus, als läge der Punkt auf ihr. */
@@ -3733,7 +3911,7 @@ const budget = help => help === 'viel' ? -1 : help === 'wenig' ? 5 : 0;
 
 function start(cfg) {
   mount(); Ui.show('scr-game'); closeEnd();
-  tok++;
+  tok++; filmAus();
   const help = cfg.help || 'viel';
   G = {
     mode: cfg.mode === 'duo' ? 'duo' : 'bot', level: Math.max(1, Math.min(4, cfg.level || 1)), human: cfg.mode === 'duo' ? -1 : (cfg.human ? 1 : 0),
@@ -3751,14 +3929,24 @@ function start(cfg) {
   renderStrips(); renderButtons();
   const fresh = !G.moves.length, mine = tok;
   let wait = 0;
-  if (fresh) { wait = bv.dropIn(); Sys.play('whoosh'); greet(); }
-  setTimeout(() => { if (mine === tok && G) turn(); }, wait);
+  /* Vor einem neuen Spiel zeigt Elo einen Tipp (nicht beim allerersten Spiel – da gibt es schon genug zu hören) */
+  const tipp = fresh && cfg.tipp !== false ? naechsterTipp() : null;
+  if (fresh) { wait = bv.dropIn(); Sys.play('whoosh'); if (!tipp) greet(); }
+  if (tipp) {
+    busy = true;
+    setTimeout(() => {
+      if (mine !== tok || !G) return;
+      /* Ist inzwischen ein Fenster offen (Pause), fällt der Tipp aus – er kommt beim nächsten Spiel. */
+      if (document.querySelector('.ov')) { busy = false; greet(true); turn(); } else zeigTipp(tipp, true);
+    }, wait);
+  }
+  else setTimeout(() => { if (mine === tok && G) turn(); }, wait);
   startEmotes();
 }
-function greet() {
+function greet(still) {
   const S = Sys.S, first = !S.seen.hallo;
   S.seen.hallo = 1;
-  coach.say([first ? Txt.hello : '', Txt.greet(duo(), G.human === 1)], { speak: true });
+  coach.say([first ? Txt.hello : '', Txt.greet(duo(), G.human === 1)], { speak: !still });
   G.keep = true;
 }
 function recount() {
@@ -3818,6 +4006,11 @@ function deselect() {
   if (bv.tag) bv.tag(-1);
 }
 
+/* Die gelben Felder zeigen den letzten Zug */
+function letzterZug() {
+  if (G.moves.length) { const u = G.moves[G.moves.length - 1]; bv.setMarks('last', [[C.sqFrom(u.slice(0, 2)), 'm-last'], [C.sqFrom(u.slice(2, 4)), 'm-last']]); } else bv.setMarks('last', null);
+}
+
 /* ---------- Ein neuer Zug beginnt ---------- */
 function turn(note) {
   if (!G) return;
@@ -3827,7 +4020,7 @@ function turn(note) {
   ['hint', 'nudge', 'check'].forEach(g => bv.setMarks(g, null));
   ['hint', 'nudge', 'check', 'warn'].forEach(g => bv.setArrows(g, null));
   bv.setPillars(null);
-  if (G.moves.length) { const u = G.moves[G.moves.length - 1]; bv.setMarks('last', [[C.sqFrom(u.slice(0, 2)), 'm-last'], [C.sqFrom(u.slice(2, 4)), 'm-last']]); } else bv.setMarks('last', null);
+  letzterZug();
   persist(); renderStrips(); renderButtons();
   if (duo() && G.seat === 'gegen' && (pos.side === 1) !== bv.turned) {
     const t = pos.side === 1, mine = tok;
@@ -4039,10 +4232,14 @@ function consider(m, fast) {
   if (G.help !== 'ohne') {
     j = C.judge(G.pos, m);
     if (j && G.help === 'wenig' && j.kind !== 'matt' && j.kind !== 'patt') j = null;
+    /* Wer gerade gewarnt wurde und denselben Zug gleich noch einmal macht, will ihn wirklich spielen. */
+    if (j && G.gewarnt && G.gewarnt.fen === G.pos.fen() && G.gewarnt.zug === C.uci(m)) j = null;
   }
   if (j) warn(m, j); else commit(m, fast);
 }
 function warn(m, j) {
+  G.gewarnt = { fen: G.pos.fen(), zug: C.uci(m) };
+  if (j.kind === 'matt' || j.kind === 'patt') { warnFilm(m, j); return; }
   const pos = G.pos, from = C.mFrom(m), to = C.mTo(m);
   deselect();
   G.pending = m; bv.locked = true;
@@ -4063,7 +4260,7 @@ function warn(m, j) {
 function commit(m, fast) {
   const pos = G.pos, mover = pos.side, info = moveInfo(pos, m, fast);
   const type = pos.b[info.from] & 7, cap = C.mCap(m), flag = C.mFlag(m), mine = tok;
-  busy = true; bv.locked = true; G.pending = null;
+  busy = true; bv.locked = true; G.pending = null; G.gewarnt = null;
   deselect();
   ['hint', 'nudge'].forEach(g => bv.setMarks(g, null)); ['hint', 'nudge', 'warn', 'check'].forEach(g => bv.setArrows(g, null)); bv.setPillars(null);
   pos.make(m); G.moves.push(C.uci(m));
@@ -4094,6 +4291,328 @@ function botMove() {
     if (!m) { const l = G.pos.legal(); if (!l.length) return; m = l[Sys.rnd(l.length)]; }
     setTimeout(() => { if (mine === tok && G) commit(m); }, Math.max(0, 750 - (Date.now() - t0)));
   });
+}
+
+/* =========================================================
+   Kleine Filme auf dem Brett: Elo zeigt etwas, ohne dass wirklich gezogen wird –
+   bei der Warnung vor Schachmatt, beim Rückblick nach dem Spiel und bei den Tipps vor dem Spiel.
+   Ein leuchtender Rahmen und ein Schild sagen deutlich: Das ist nur gezeigt.
+   Danach steht wieder die echte Stellung da.
+   ========================================================= */
+let filmNr = 0, filmHalt = null;        /* filmHalt beendet den laufenden Film ordentlich (zum Beispiel wenn jemand auf Pause tippt) */
+const warte = ms => new Promise(res => setTimeout(res, ms));
+function filmAn(schild) { els.root.classList.add('film'); els.stage.dataset.schild = schild || ''; }
+function filmAus() { filmNr++; filmHalt = null; if (els) els.root.classList.remove('film'); }
+function zeigStellung(pos) { bv.clearAll(); bv.sync(BoardView.fromPos(pos)); }
+function echteStellung() {
+  zeigStellung(G.pos); letzterZug();
+  if (G.pos.inCheck()) bv.setMarks('check', [[G.pos.king[G.pos.side], 'm-check']]);
+}
+/* Elo sagt etwas. Das Versprechen wird erfüllt, wenn er fertig ist – spätestens nach einer Lesepause
+   (auch wenn inzwischen jemand auf „Nochmal vorlesen“ getippt hat: Ein Film darf nie hängen bleiben). */
+function sagen(x, actions, read) {
+  return new Promise(res => {
+    let fertig = false;
+    const t0 = Date.now(), lesen = 900 + Txt.plain([].concat(read || x).filter(Boolean).join(' ')).length * 62;
+    const ende = () => { if (!fertig) { fertig = true; res(); } };
+    /* Kommt das „fertig“ viel zu früh, hat der Ton nicht geklappt. Dann bleibt der Text trotzdem so lange stehen, dass man ihn lesen kann. */
+    const done = () => { const d = Date.now() - t0; if (d < lesen * 0.4 && !window.TEST_EILIG) setTimeout(ende, lesen - d); else ende(); };
+    coach.say(x, { speak: true, then: done, actions: actions, read: read });
+    setTimeout(ende, lesen * 1.7 + 3500);
+  });
+}
+
+/* ---------- Warum ist das Schachmatt? ---------- */
+/* Untersucht die Stellung: Der König von pos.side kann nicht mehr ziehen (matt oder patt).
+   Liefert die Angreifer und für jedes Feld um den König den Grund, warum er dort nicht hin kann. */
+function mattBild(pos) {
+  const us = pos.side, them = us ^ 1, k = pos.king[us], b = pos.b;
+  const geber = pos.inCheck() ? checkers(pos) : [], felder = [], kpc = b[k];
+  b[k] = 0;                                  /* den König kurz wegdenken: Linien, die durch ihn gehen, bewachen auch das Feld dahinter */
+  [16, 17, 1, -15, -16, -17, -1, 15].forEach(d => {
+    const s = k + d;
+    if (s & 0x88) return;
+    const pc = b[s];
+    if (pc && (pc >> 3) === us) { felder.push({ sq: s, eigen: true, von: -1 }); return; }
+    const w = pos.attackers(s, them);
+    felder.push({ sq: s, eigen: false, von: w.length ? w[0] : -1, figur: pc ? pc & 7 : 0 });
+  });
+  b[k] = kpc;
+  return { k: k, us: us, geber: geber, felder: felder, patt: !geber.length };
+}
+/* Zeigt es auf dem Brett: erst der Angriff, dann Feld für Feld ein rotes Kreuz – mit dem Wächter dazu. */
+async function zeigMatt(bild, gilt, schnell) {
+  const schritt = schnell ? 240 : 400;
+  if (bild.geber.length) {
+    bv.setMarks('check', [[bild.k, 'm-check']]);
+    bv.setArrows('check', bild.geber.map(s => ({ from: s, to: bild.k, cls: 'red' })));
+    bv.flag(bild.k, 'fear'); Sys.play('check');
+    await warte(schnell ? 500 : 850);
+  } else if (bild.patt) bv.setPillars([bild.k], '#ffe14d');   /* kein Schach (Patt): nur zeigen, um wen es geht */
+  const no = [];
+  for (const f of bild.felder) {
+    if (!gilt()) return;
+    no.push([f.sq, 'm-no']); bv.setMarks('flucht', no.slice());
+    bv.setArrows('wach', !f.eigen && f.von >= 0 ? [{ from: f.von, to: f.sq, cls: 'orange' }] : null);
+    if (f.eigen) bv.bubble(f.sq, 'Besetzt!', true);
+    Sys.play('tap');
+    await warte(f.eigen ? schritt : schritt * 1.3);   /* bei einem Wächter kurz länger hinschauen */
+  }
+  if (gilt()) { await warte(schritt); bv.setArrows('wach', null); }
+}
+/* Welches bekannte Muster war das? (für den Merksatz) */
+function mattMuster(pos, bild, zuege) {
+  const b = pos.b, us = pos.side, k = bild.k, kr = k >> 4, kf = k & 7, heim = us ? 7 : 0, g = bild.geber, fl = bild.felder;
+  const typ = g.length === 1 ? b[g[0]] & 7 : 0, nah = g.length === 1 ? fl.find(f => f.sq === g[0]) : null;
+  let schwer = 0;                                              /* Was hat der Verlierer noch außer Bauern? */
+  for (let s = 0; s < 120; s++) { if (s & 0x88) { s += 7; continue; } const pc = b[s]; if (pc && (pc >> 3) === us && (pc & 7) !== C.P && (pc & 7) !== C.K) schwer += C.VAL[pc & 7]; }
+  const endspiel = schwer <= 500, amRand = kr === 0 || kr === 7 || kf === 0 || kf === 7;
+  if (typ === C.Q && nah && k === (us ? 116 : 4) && zuege <= 16 && (g[0] >> 4) === (us ? 6 : 1)) return 'schaefer';
+  if (typ === C.N && fl.length && fl.every(f => f.eigen)) return 'erstickt';
+  if ((typ === C.R || typ === C.Q) && kr === heim && (g[0] >> 4) === kr && !nah) {
+    const vor = fl.filter(f => (f.sq >> 4) !== kr);
+    if (vor.length && vor.every(f => f.eigen)) return 'reihe';
+  }
+  if ((typ === C.R || typ === C.Q) && amRand && !nah && endspiel) {
+    const aufLinie = (kr === 0 || kr === 7) ? (g[0] >> 4) === kr : (g[0] & 7) === kf;
+    const wachen = fl.filter(f => !f.eigen && f.von >= 0 && f.von !== g[0] && ((b[f.von] & 7) === C.R || (b[f.von] & 7) === C.Q));
+    if (aufLinie && wachen.length >= 2) return 'treppe';
+  }
+  if (typ === C.Q && nah) return 'nah';
+  if (amRand && endspiel) return 'rand';
+  return 'team';
+}
+/* Wo war der König noch zu retten? Sucht beim Verlierer den letzten Zug, bei dem es noch eine Rettung gab.
+   Liefert { zahl: so viele Züge standen da, n: 1 oder 2 (eigene Züge vorher), gespielt, besser } oder null. */
+function findeRettung() {
+  const mv = G.moves.slice(), N = mv.length;
+  if (N < 2) return Promise.resolve(null);
+  const info = (pos, m) => ({ from: C.mFrom(m), to: C.mTo(m) });
+  const p0 = C.fromMoves(C.START, mv.slice(0, N - 2)), gespielt = p0.find(mv[N - 2]);
+  const sicher = p0.legal().filter(m => m !== gespielt && !C.allowsMate(p0, m));
+  if (sicher.length) {
+    return Sys.think({ kind: 'tipp', fen: C.START, moves: mv.slice(0, N - 2), ms: 350 }).then(r => {
+      let m = r && r.move ? p0.find(r.move) : 0;
+      if (!m || sicher.indexOf(m) < 0) {
+        /* der Rechner schlägt nichts Sicheres vor: den Zug nehmen, der am wenigsten verliert */
+        let best = 1e9; m = sicher[0];
+        sicher.forEach(x => { const v = C.squareLoss(p0, x); if (v < best) { best = v; m = x; } });
+      }
+      return { zahl: N - 2, n: 1, gespielt: info(p0, gespielt), besser: info(p0, m) };
+    }).catch(() => null);
+  }
+  if (N < 4) return Promise.resolve(null);
+  const p1 = C.fromMoves(C.START, mv.slice(0, N - 4)), gespielt1 = p1.find(mv[N - 4]);
+  return Sys.think({ kind: 'tipp', fen: C.START, moves: mv.slice(0, N - 4), ms: 450 }).then(r => {
+    const m = r && r.move ? p1.find(r.move) : 0;
+    if (!m || m === gespielt1 || !(r.score > -C.MATE + 500) || C.allowsMate(p1, m)) return null;
+    return { zahl: N - 4, n: 2, gespielt: info(p1, gespielt1), besser: info(p1, m) };
+  }).catch(() => null);
+}
+/* Der Rückblick: kurz zeigen, was passiert ist – und was man sich merken kann. Danach done(). */
+async function rueckblick(st, art, done) {
+  const mine = tok, nr = ++filmNr, two = duo(), pos = G.pos, M = Txt.matt, S = Sys.S;
+  const gilt = () => !!G && mine === tok && nr === filmNr;
+  let fertig = false, verstellt = false;
+  /* Alles Zeigen wegräumen: Jubel, Kreuze, Pfeile, Lichtsäulen */
+  const ruhig = () => {
+    ['joy', 'ko', 'fear'].forEach(c => bv.unflag(c));
+    ['flucht', 'film', 'hint', 'nudge'].forEach(x => bv.setMarks(x, null));
+    ['check', 'wach', 'film', 'hint', 'nudge', 'warn'].forEach(x => bv.setArrows(x, null));
+    bv.setPillars(null);
+  };
+  const ende = () => {
+    if (fertig) return;
+    fertig = true; filmAus(); Sys.hush();
+    if (verstellt) echteStellung(); else ruhig();
+    jubel(st);
+    done();
+  };
+  filmHalt = () => { if (gilt()) ende(); };
+  const weiter = { label: 'Weiter', icon: 'los', cls: 'white', fn() { if (gilt()) ende(); } };
+  const bild = mattBild(pos), g = bild.geber, fl = bild.felder;
+  /* (falls der Rechner einmal nicht antwortet, geht es nach ein paar Sekunden ohne Rettung weiter) */
+  const rettung = two || art === 'lose' ? Promise.race([findeRettung(), warte(5000).then(() => null)]) : Promise.resolve(null);
+  bv.locked = true;
+  ruhig(); bv.flag(bild.k, 'fear');
+  filmAn('Warum ist das Schachmatt?');
+  /* 1. Wer greift an? */
+  bv.setArrows('check', g.map(s => ({ from: s, to: bild.k, cls: 'red' })));
+  bv.setPillars(g, '#ff5a4d'); Sys.play('check');
+  await sagen(g.length > 1 ? M.angriff2 : M.angriff(pos.b[g[0]] & 7), [weiter]);
+  if (!gilt()) return;
+  /* 2. Warum kann der König nicht weglaufen? */
+  bv.setPillars(null);
+  const s2 = sagen(fl.length && fl.every(f => f.eigen) ? M.flucht.eigen : fl.some(f => f.eigen) ? M.flucht.gemischt : M.flucht.bewacht, [weiter]);
+  await zeigMatt({ k: bild.k, geber: [], felder: fl }, gilt);
+  await s2;
+  if (!gilt()) return;
+  /* 3. Warum hilft sonst nichts? */
+  const nah = g.length === 1 ? fl.find(f => f.sq === g[0]) : null;
+  let t3 = '';
+  if (g.length > 1) t3 = M.hilfe2;
+  else if (nah && nah.von >= 0) { t3 = M.beschuetzt(pos.b[g[0]] & 7); bv.setArrows('wach', [{ from: nah.von, to: g[0], cls: 'orange' }]); }
+  else if ((S.seen.mattHilfe || 0) < 3) { S.seen.mattHilfe = (S.seen.mattHilfe || 0) + 1; Sys.save(); t3 = M.hilfe; }
+  await sagen([t3, M.darum], [weiter]);
+  if (!gilt()) return;
+  bv.setArrows('wach', null);
+  /* 4. Das Muster – und der Trick fürs nächste Mal */
+  const mu = mattMuster(pos, bild, G.moves.length), r = await rettung;
+  if (!gilt()) return;
+  if (mu !== 'team') { await sagen(M.muster[mu][0], [weiter]); if (!gilt()) return; }
+  if (!two && art === 'win') {
+    if (mu !== 'team') { await sagen(M.merk, [weiter]); if (!gilt()) return; }
+    /* kein bekanntes Muster: ein Lob für die Zusammenarbeit – wenn wirklich jemand mitgeholfen hat */
+    else if (fl.some(f => !f.eigen && f.von >= 0 && g.indexOf(f.von) < 0)) { await sagen(M.muster.team[0], [weiter]); if (!gilt()) return; }
+  }
+  else if (mu !== 'team' || !r) { await sagen(M.muster[mu][1], [weiter]); if (!gilt()) return; }
+  /* 5. Wo war der König noch zu retten? */
+  if (r) {
+    filmAn(r.n === 1 ? 'Einen Zug vorher' : 'Zwei Züge vorher');
+    verstellt = true;
+    zeigStellung(C.fromMoves(C.START, G.moves.slice(0, r.zahl)));
+    await sagen(M.vorher(r.n), [weiter]);
+    if (!gilt()) return;
+    bv.setArrows('film', [{ from: r.gespielt.from, to: r.gespielt.to, cls: 'red' }, { from: r.besser.from, to: r.besser.to, cls: 'green' }]);
+    bv.setPillars([r.besser.to], '#46e08a');
+    const nochmal = { label: 'Von hier nochmal', icon: 'zurueck', cls: 'mint', fn() { if (!gilt()) return; fertig = true; Sys.hush(); zurueckZu(r.zahl, M.vonHier); } };
+    const selbst = !two && art === 'lose';
+    await sagen(M.besser, selbst ? [nochmal, weiter] : [weiter]);
+    if (!gilt() || selbst) return;                 /* wer verloren hat, entscheidet selbst: nochmal von hier – oder weiter */
+    await warte(1500);
+  } else await warte(700);
+  if (gilt()) ende();
+}
+
+/* ---------- Schutzengel bei Schachmatt und Patt: Elo spielt in Gedanken vor, was passieren würde ---------- */
+function warnFilm(m, j) {
+  const zahl = G.moves.length, mine = tok, nr = ++filmNr, matt = j.kind === 'matt';
+  const gilt = () => !!G && mine === tok && nr === filmNr && G.moves.length === zahl;
+  const frei = () => !!G && mine === tok && G.moves.length === zahl && !G.over;
+  deselect();
+  G.pending = m; bv.locked = true;
+  bv.setMarks('nudge', null); bv.setArrows('nudge', null); bv.setMarks('hint', null); bv.setArrows('hint', null); bv.setPillars(null);
+  Sys.play('bad');
+  const zurueck = () => { filmAus(); G.pending = null; echteStellung(); bv.locked = false; };
+  filmHalt = () => { if (gilt()) { zurueck(); coach.say(Txt.warnBack); } };
+  const anders = { label: 'Anders ziehen', icon: 'zurueck', cls: 'mint', fn() { if (!gilt()) return; zurueck(); coach.say(Txt.warnBack, { speak: true }); } };
+  const trotzdem = { label: 'Trotzdem', cls: 'white', fn() {
+    if (!frei() || busy) return;
+    zurueck();
+    const mm = G.pos.find(C.uci(m));
+    if (mm) commit(mm, true);
+  } };
+  (async () => {
+    const p = C.fromMoves(C.START, G.moves), mm = p.find(C.uci(m));
+    if (!mm) { zurueck(); return; }
+    filmAn('Nur ausgedacht');
+    const erst = sagen(matt ? Txt.warnMatt : Txt.warnPatt, [anders, trotzdem]);
+    const i1 = moveInfo(p, mm, false);
+    p.make(mm);
+    await bv.playMove(i1);                         /* der eigene Zug – nur gezeigt */
+    await erst;
+    if (!gilt()) return;
+    if (matt) {
+      const i2 = moveInfo(p, j.reply, false), cap = C.mCap(j.reply);
+      p.make(j.reply);
+      if (!cap) Sys.play('move');
+      await bv.playMove(i2);                       /* und so würde der Gegner antworten */
+      if (cap) Sys.play('cap');
+      if (!gilt()) return;
+      const text = sagen(Txt.warnMattFilm, [anders, trotzdem]);
+      await zeigMatt(mattBild(p), gilt);
+      await text;
+    } else {
+      await zeigMatt(mattBild(p), gilt);           /* Patt: kein Schach, aber kein Feld ist frei */
+      await warte(900);
+    }
+    if (!gilt()) return;
+    await warte(600);
+    if (!gilt()) return;
+    zurueck();
+    coach.say(Txt.warnFilmEnde, { speak: true, actions: [
+      { label: 'Nochmal zeigen', icon: 'auge', fn() { if (!frei() || busy || G.pending || !humanTurn()) return; const x = G.pos.find(C.uci(m)); if (x) warnFilm(x, j); } },
+      trotzdem
+    ] });
+  })();
+}
+
+/* ---------- Elos Tipp vor dem Spiel ---------- */
+function naechsterTipp() {
+  const S = Sys.S;
+  if (S.set.tipps === false || !S.seen.hallo || !D.TIPPS.length) return null;
+  return D.TIPPS[(S.tipp || 0) % D.TIPPS.length];
+}
+/* Spielt das Kind die Dinos, wird der Film gespiegelt: Reihen tauschen, Farben tauschen */
+const feldSp = (n, sp) => C.sqFrom(sp ? n[0] + (9 - +n[1]) : n);
+const zugSp = (z, sp) => sp ? z[0] + (9 - +z[1]) + z[2] + (9 - +z[3]) + z.slice(4) : z;
+function fenSp(fen) {
+  const t = fen.split(' '), tausch = x => x.replace(/[a-zA-Z]/g, c => c === c.toLowerCase() ? c.toUpperCase() : c.toLowerCase());
+  t[0] = t[0].split('/').reverse().map(tausch).join('/'); t[1] = t[1] === 'w' ? 'b' : 'w';
+  if (t[2] !== '-') t[2] = tausch(t[2]).split('').sort().join('');
+  if (t[3] && t[3] !== '-') t[3] = t[3][0] + (9 - +t[3][1]);
+  return t.join(' ');
+}
+/* Die Szenen eines Films nacheinander zeigen. kopf: Überschrift vor jedem Text. Liefert false, wenn abgebrochen wurde. */
+async function spieleSzenen(film, sp, kopf, gilt, actions) {
+  let pos = null;
+  for (const sz of film) {
+    if (!gilt()) return false;
+    if (sz.fen) { pos = new C.Position(sp ? fenSp(sz.fen) : sz.fen); zeigStellung(pos); await warte(380); if (!gilt()) return false; }
+    const gesagt = sagen(kopf + sz.sag, actions, sz.sag);
+    for (const x of sz.tu || []) {
+      if (!gilt()) return false;
+      if (typeof x === 'number') { await warte(x); continue; }
+      if (typeof x === 'string') {
+        const m = pos ? pos.find(zugSp(x, sp)) : 0;
+        if (!m) continue;
+        const info = moveInfo(pos, m, false), cap = C.mCap(m);
+        pos.make(m);
+        if (!cap) Sys.play('move');
+        await bv.playMove(info);
+        if (cap) Sys.play('cap');
+        if (info.promo) Sys.play('promo');
+        await warte(230);
+        continue;
+      }
+      if (x.pf) bv.setArrows('film', x.pf.map(a => ({ from: feldSp(a[0], sp), to: feldSp(a[1], sp), cls: a[2] })));
+      if (x.mk) bv.setMarks('film', x.mk.map(a => [feldSp(a[0], sp), a[1]]));
+      if (x.pkt) { if (!x.pkt.length) bv.clearLabels(); x.pkt.forEach(a => { bv.label(feldSp(a[0], sp), a[1]); Sys.play('pick'); }); }
+      if (x.matt && pos) await zeigMatt(mattBild(pos), gilt, true);
+    }
+    await gesagt;
+    if (!gilt()) return false;
+    await warte(450);
+  }
+  return true;
+}
+/* amAnfang: vor dem ersten Zug (danach geht das Spiel los) – sonst mitten im Spiel aus der Pause */
+async function zeigTipp(t, amAnfang) {
+  const mine = tok, nr = ++filmNr, S = Sys.S, sp = !duo() && G.human === 1;
+  const gilt = () => !!G && mine === tok && nr === filmNr;
+  let fertig = false;
+  const ende = still => {
+    if (fertig) return;
+    fertig = true; filmAus(); Sys.hush();
+    busy = false;
+    if (amAnfang) {
+      zeigStellung(G.pos);
+      const w = bv.dropIn(); Sys.play('whoosh'); greet(still === true);
+      setTimeout(() => { if (mine === tok && G) turn(); }, w);
+    } else { echteStellung(); bv.locked = false; coach.say(Txt.turn(duo(), G.pos.side)); }
+  };
+  filmHalt = () => { if (gilt()) ende(true); };
+  const weiter = { label: amAnfang ? 'Los geht’s!' : 'Fertig', icon: 'los', fn() { if (gilt()) ende(); } };
+  if (amAnfang) { S.tipp = (S.tipp || 0) + 1; Sys.save(); }
+  G.tipp = t;
+  busy = true; bv.locked = true; deselect();
+  ['hint', 'nudge', 'check'].forEach(x => { bv.setMarks(x, null); bv.setArrows(x, null); }); bv.setPillars(null);
+  filmAn(Txt.name + 's Tipp');
+  if (amAnfang) { await sagen('<b>' + Txt.tippStart + '</b>', [weiter]); if (!gilt()) return; }
+  const ok = await spieleSzenen(t.film, sp, '<b>Tipp: ' + t.n + (/[.!?]$/.test(t.n) ? '' : '.') + '</b> ', gilt, [weiter]);
+  if (!ok || !gilt()) return;
+  await warte(900);
+  if (gilt()) ende();
 }
 
 /* ---------- Tipp ---------- */
@@ -4133,14 +4652,18 @@ function undo() {
   let n = duo() ? 1 : (G.pos.side === G.human ? 2 : 1);
   n = Math.min(n, G.moves.length);
   if (!n) return;
-  tok++; closeEnd();
-  G.moves.length -= n;
+  zurueckZu(G.moves.length - n);
+}
+/* Das Spiel auf einen früheren Stand zurückdrehen (so viele Züge bleiben stehen) */
+function zurueckZu(zahl, text) {
+  tok++; closeEnd(); filmAus();
+  G.moves.length = Math.max(0, zahl);
   G.pos = C.fromMoves(C.START, G.moves);
   recount();
-  G.over = false; G.lastThreat = -1; G.keep = false;
+  G.over = false; G.lastThreat = -1; G.keep = false; G.pending = null; G.gewarnt = null; busy = false;
   bv.clearAll(); bv.sync(BoardView.fromPos(G.pos));
   startEmotes();
-  turn(Txt.undo);
+  turn(text || Txt.undo);
 }
 
 /* ---------- Ende ---------- */
@@ -4159,16 +4682,31 @@ function finish(st) {
   }
   const e = Txt.end(kind, two, team), title = e[0], text = e[1];
   if (st.reason === 'matt' && !BoardView.calm) { bv.zoom(G.pos.king[st.winner ^ 1], true); setTimeout(() => { if (mine === tok) bv.zoom(0, false); }, 1900); }
-  coach.say('<b>' + title + (/[.!?]$/.test(title) ? '' : '.') + '</b> ' + text, { speak: true, read: Txt.endRead(kind, two, team) });
+  /* Nach einem Schachmatt erklärt Elo kurz, was passiert ist – erst danach kommt das Schlussbild.
+     Dafür warten wir, bis er die Ansage zu Ende gesprochen hat. */
+  const schau = st.reason === 'matt' && G.help !== 'ohne';
+  const ansage = '<b>' + title + (/[.!?]$/.test(title) ? '' : '.') + '</b> ' + text, lies = Txt.endRead(kind, two, team);
+  const gesagt = schau ? sagen(ansage, null, lies) : (coach.say(ansage, { speak: true, read: lies }), null);
+  const art = won ? kind : kind === 'lose' ? 'lose' : 'draw';
+  const schluss = () => { if (mine === tok) endScreen(art, title, text, won ? n : 0, st); };
+  const weiter = () => { if (mine !== tok) return; if (schau && !document.querySelector('.ov')) rueckblick(st, art, schluss); else schluss(); };
   if (won) {
     S.wins[two ? 0 : G.level] = (S.wins[two ? 0 : G.level] || 0) + 1;
     Sys.save(); Sys.play('win'); Ui.confetti(90);
     if (bv.feuerwerk) bv.feuerwerk(8);
-    setTimeout(() => { if (mine !== tok) return; bv.elephant().then(() => { if (mine === tok) endScreen(kind, title, text, n, st); }); }, 2100);
+    const feier = new Promise(res => setTimeout(() => { if (mine !== tok) return; bv.elephant().then(res); }, 2100));
+    Promise.all([feier, gesagt]).then(weiter);
   } else {
     Sys.save(); Sys.play(kind === 'lose' ? 'lose' : 'draw');
-    setTimeout(() => { if (mine === tok) endScreen(kind === 'lose' ? 'lose' : 'draw', title, text, 0, st); }, 2400);
+    Promise.all([warte(2400), gesagt]).then(weiter);
   }
+}
+/* Sieger jubeln, der geschlagene König liegt am Boden (auch nach einem Rückblick wieder) */
+function jubel(st) {
+  if (st.reason !== 'matt') return;
+  const wt = st.winner ? 'd' : 'u';
+  bv.flag(G.pos.king[st.winner ^ 1], 'ko');
+  for (const s in bv.pcs) { const el = bv.pcs[s]; if (el._team === wt) bv.mark(el, 'joy'); }
 }
 function closeEnd() { if (endOv) { endOv.close(); endOv = null; } }
 function endScreen(kind, title, text, n, st) {
@@ -4186,6 +4724,8 @@ function endScreen(kind, title, text, n, st) {
     if (kind !== 'win') zeile.appendChild(Ui.btn('Zug zurück', 'zurueck', 'white', undo));
     if (!two && kind === 'win' && G.level < 4) zeile.appendChild(Ui.btn('Schwerer', 'stern', 'pink', () => start({ mode: 'bot', level: G.level + 1, human: G.human, help: D.LEVELS[G.level + 1].help })));
     if (!two && kind === 'lose' && G.level > 1) zeile.appendChild(Ui.btn('Leichter', 'stern', 'mint', () => start({ mode: 'bot', level: G.level - 1, human: G.human, help: D.LEVELS[G.level - 1].help })));
+    /* Nochmal sehen, warum es Schachmatt ist */
+    if (st.reason === 'matt') zeile.appendChild(Ui.btn('Warum Schachmatt?', 'auge', 'sky', () => { if (!endOv) return; endOv.el.hidden = true; rueckblick(st, kind, () => { if (endOv) endOv.el.hidden = false; }); }));
     if (Sys.S.gifts.length) zeile.appendChild(Ui.btn('Schatzkiste', 'geschenk', 'white', () => { if (endOv) endOv.el.hidden = true; Gift.chest({ back() { zurueckInsSpiel(); if (endOv) endOv.el.hidden = false; } }); }));
     zeile.appendChild(Ui.btn('Hauptmenü', 'haus', 'white', leave));
   };
@@ -4202,6 +4742,8 @@ function endScreen(kind, title, text, n, st) {
 /* ---------- Pause ---------- */
 function pause() {
   if (!G) return;
+  /* Läuft gerade ein Film (Tipp, Warnung, Rückblick), hört er ordentlich auf. Nach dem Rückblick kommt das Schlussbild – das reicht dann. */
+  if (filmHalt) { filmHalt(); if (G.over) return; }
   const S = Sys.S;
   const body = h('div', { class: 'liste' });
   const sh = Ui.sheet('Pause', body);
@@ -4215,6 +4757,8 @@ function pause() {
   App.settings().forEach(t => body.appendChild(t));
   const z = h('div', { class: 'zeile' });
   z.appendChild(Ui.btn('Die Figuren', 'frage', 'sky', () => App.figures()));
+  /* Elos Tipp (nochmal) ansehen – geht, wenn man selbst am Zug ist */
+  if (!G.over && !busy && !G.pending && humanTurn()) z.appendChild(Ui.btn(Txt.name + 's Tipp', 'tipp', '', () => { sh.close(); if (G && !G.over && !busy && !G.pending && humanTurn()) zeigTipp(G.tipp || D.TIPPS[(S.tipp || 0) % D.TIPPS.length], false); }));
   /* Mitten im Spiel umziehen: Die Schatzkiste führt danach wieder hierher zurück */
   z.appendChild(Ui.btn('Schatzkiste', 'geschenk', 'pink', () => { sh.close(); Gift.chest({ back: zurueckInsSpiel }); }));
   z.appendChild(Ui.btn('Neu anfangen', 'neu', 'white', () => { sh.close(); start({ mode: G.mode, level: G.level, human: G.human, seat: G.seat, help: G.help }); }));
@@ -4222,7 +4766,7 @@ function pause() {
   body.appendChild(z);
 }
 function leave() {
-  tok++; stopEmotes(); closeEnd();
+  tok++; stopEmotes(); closeEnd(); filmAus();
   document.getElementById('app').classList.remove('verkehrt');
   if (G) persist();
   Sys.hush();
@@ -4247,7 +4791,7 @@ function startEmotes() {
 }
 function stopEmotes() { clearInterval(emoteTimer); }
 
-return { start: start, refresh: refresh, get active() { return !!G; }, _dbg() { return { G: G, bv: bv }; } };
+return { start: start, refresh: refresh, get active() { return !!G; }, _dbg() { return { G: G, bv: bv, mattBild: mattBild, mattMuster: mattMuster }; } };
 })();
 
 /* =========================================================
@@ -4359,6 +4903,7 @@ function setupDuo() {
 function settings() {
   const S = Sys.S, out = [];
   if (Sys.canSpeak) out.push(Ui.toggle('Vorlesen', 'vorlesen', () => S.set.voice, v => { S.set.voice = v; Sys.save(); if (v) Sys.speak(Txt.voiceOn); else Sys.hush(); }));
+  out.push(Ui.toggle('Tipp vor jedem Spiel', 'tipp', () => S.set.tipps !== false, v => { S.set.tipps = v; Sys.save(); }));
   /* Wer liest vor? Elo (Männerstimme) oder Ela (Frauenstimme) */
   if (Sys.hatFrau) {
     out.push(h('h3', { text: 'Wer liest vor?' }));
